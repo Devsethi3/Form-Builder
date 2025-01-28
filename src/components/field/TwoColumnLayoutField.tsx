@@ -24,6 +24,8 @@ const extraAttributes = {
 
 const propertiesSchema = z.object({
   gap: z.string(),
+  leftColumn: z.array(z.any()).default([]),
+  rightColumn: z.array(z.any()).default([]),
 });
 
 // Create a memoized wrapper for form components
@@ -32,6 +34,11 @@ const MemoizedFormComponent = memo(
     return FormElements[element.type].formComponent({
       elementInstance: element,
     });
+  },
+  (prevProps, nextProps) => {
+    // Custom comparison function to ensure proper updates
+    return prevProps.element.id === nextProps.element.id &&
+           JSON.stringify(prevProps.element.extraAttributes) === JSON.stringify(nextProps.element.extraAttributes);
   }
 );
 
@@ -40,7 +47,11 @@ export const TwoColumnLayoutFieldFormElement: FormElement = {
   construct: (id: string) => ({
     id,
     type,
-    extraAttributes,
+    extraAttributes: {
+      ...extraAttributes,
+      leftColumn: [], // Create new arrays for each instance
+      rightColumn: [], // Create new arrays for each instance
+    },
   }),
   designerBtnElement: {
     icon: LuColumns,
@@ -161,6 +172,8 @@ function PropertiesComponent({ elementInstance }: { elementInstance: FormElement
     mode: "onBlur",
     defaultValues: {
       gap: element.extraAttributes.gap,
+      leftColumn: element.extraAttributes.leftColumn,
+      rightColumn: element.extraAttributes.rightColumn,
     },
   });
 
@@ -169,14 +182,9 @@ function PropertiesComponent({ elementInstance }: { elementInstance: FormElement
   }, [element, form]);
 
   function applyChanges(values: propertiesFormSchemaType) {
-    const { leftColumn, rightColumn } = element.extraAttributes;
     updateElement(element.id, {
       ...element,
-      extraAttributes: {
-        ...values,
-        leftColumn,
-        rightColumn,
-      },
+      extraAttributes: values,
     });
   }
 
