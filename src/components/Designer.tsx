@@ -9,9 +9,10 @@ import { idGenerator } from "@/lib/idGenerator";
 import { Button } from "./ui/button";
 import { BiSolidTrash } from "react-icons/bi";
 import useDesigner from "@/hooks/useDesigner";
+import { formThemes } from "@/schemas/form";
 
 function Designer() {
-    const { elements, addElement, selectedElement, setSelectedElement, removeElement } = useDesigner();
+    const { elements, addElement, selectedElement, setSelectedElement, removeElement, theme } = useDesigner();
 
     const droppable = useDroppable({
         id: "designer-drop-area",
@@ -112,12 +113,15 @@ function Designer() {
                 <div
                     ref={droppable.setNodeRef}
                     className={cn(
-                        "bg-background max-w-[920px] h-full m-auto rounded-xl flex flex-col flex-grow items-center justify-start flex-1 overflow-y-auto",
+                        formThemes[theme].styles.background,
+                        formThemes[theme].styles.text,
+                        formThemes[theme].styles.border,
+                        "max-w-[920px] h-full m-auto rounded-xl flex flex-col flex-grow items-center justify-start flex-1 overflow-y-auto border",
                         droppable.isOver && "ring-4 ring-primary ring-inset",
                     )}
                 >
                     {!droppable.isOver && elements.length === 0 && (
-                        <p className="text-3xl text-muted-foreground flex flex-grow items-center font-bold">Drop here</p>
+                        <p className={cn("text-3xl font-bold flex flex-grow items-center", formThemes[theme].styles.muted)}>Drop here</p>
                     )}
 
                     {droppable.isOver && elements.length === 0 && (
@@ -214,8 +218,10 @@ function DesignerElementWrapper({ element }: { element: FormElementInstance }) {
             {topHalf.isOver && <div className="absolute top-0 w-full rounded-md h-[7px] bg-primary rounded-b-none" />}
             <div
                 className={cn(
-                    "flex w-full min-h-[100px] items-center rounded-md bg-accent/40 px-4 py-2 pointer-events-none opacity-100",
+                    "flex w-full min-h-[40px] items-center rounded-md px-4 py-2 pointer-events-none",
                     mouseIsOver && "opacity-30",
+                    selectedElement?.id === element.id && "ring-2 ring-primary ring-inset",
+                    !mouseIsOver && !selectedElement?.id && "hover:ring-2 hover:ring-accent ring-inset"
                 )}
             >
                 <DesignerElement elementInstance={element} />

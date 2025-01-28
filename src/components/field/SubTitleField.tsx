@@ -12,6 +12,8 @@ import { LuHeading2 } from "react-icons/lu";
 import useDesigner from "@/hooks/useDesigner";
 import { fontSizes, FontSize, fontSizeSchema, alignments, Alignment, alignmentSchema } from "./utils/fontStyles";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { cn } from "@/lib/utils"; // Fix cn import to use @/lib/utils
+import { formThemes } from "@/schemas/form";
 
 const type: ElementsType = "SubTitleField";
 
@@ -52,19 +54,24 @@ type CustomInstance = FormElementInstance & {
 function DesignerComponent({ elementInstance }: { elementInstance: FormElementInstance }) {
   const element = elementInstance as CustomInstance;
   const { subTitle, fontSize, alignment } = element.extraAttributes;
+  const { theme } = useDesigner();
+  const { styles } = formThemes[theme];
+
   return (
     <div className="flex flex-col gap-2 w-full">
       <Label className="text-muted-foreground">Subtitle field</Label>
-      <p className={`${fontSizes[fontSize]} ${alignments[alignment]}`}>{subTitle}</p>
+      <p className={cn(fontSizes[fontSize], alignments[alignment], styles.text)}>{subTitle}</p>
     </div>
   );
 }
 
 function FormComponent({ elementInstance }: { elementInstance: FormElementInstance }) {
   const element = elementInstance as CustomInstance;
-
   const { subTitle, fontSize, alignment } = element.extraAttributes;
-  return <p className={`${fontSizes[fontSize]} ${alignments[alignment]}`}>{subTitle}</p>;
+  const { theme } = useDesigner();
+  const { styles } = formThemes[theme];
+
+  return <p className={cn(fontSizes[fontSize], alignments[alignment], styles.text)}>{subTitle}</p>;
 }
 
 type propertiesFormSchemaType = z.infer<typeof propertiesSchema>;

@@ -13,6 +13,8 @@ import { LuHeading1 } from "react-icons/lu";
 import useDesigner from "@/hooks/useDesigner";
 import { fontSizes, FontSize, fontSizeSchema, alignments, Alignment, alignmentSchema } from "./utils/fontStyles";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { cn } from "@/lib/utils";
+import { formThemes } from "@/schemas/form";
 
 const type: ElementsType = "TitleField";
 
@@ -53,19 +55,24 @@ type CustomInstance = FormElementInstance & {
 function DesignerComponent({ elementInstance }: { elementInstance: FormElementInstance }) {
   const element = elementInstance as CustomInstance;
   const { title, fontSize, alignment } = element.extraAttributes;
+  const { theme } = useDesigner();
+  const { styles } = formThemes[theme];
+  
   return (
     <div className="flex flex-col gap-2 w-full">
       <Label className="text-muted-foreground">Title field</Label>
-      <p className={`${fontSizes[fontSize]} ${alignments[alignment]}`}>{title}</p>
+      <p className={cn(fontSizes[fontSize], alignments[alignment], styles.text)}>{title}</p>
     </div>
   );
 }
 
 function FormComponent({ elementInstance }: { elementInstance: FormElementInstance }) {
   const element = elementInstance as CustomInstance;
-
   const { title, fontSize, alignment } = element.extraAttributes;
-  return <p className={`${fontSizes[fontSize]} ${alignments[alignment]}`}>{title}</p>;
+  const { theme } = useDesigner();
+  const { styles } = formThemes[theme];
+
+  return <p className={cn(fontSizes[fontSize], alignments[alignment], styles.text)}>{title}</p>;
 }
 
 type propertiesFormSchemaType = z.infer<typeof propertiesSchema>;

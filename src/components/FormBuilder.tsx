@@ -7,6 +7,7 @@ import PublishFormBtn from "./PublishFormBtn";
 import GenerateCodeBtn from "./GenerateCodeBtn";
 import SaveFormBtn from "./SaveFormBtn";
 import Designer from "./Designer";
+import { ThemeSelector } from "./ThemeSelector"; 
 import { DndContext, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import DragOverlayWrapper from "./DragOverlayWrapper";
 import { ImSpinner2 } from "react-icons/im";
@@ -139,6 +140,7 @@ function FormBuilder({ form }: { form: Form }) {
             {form.name}
           </h2>
           <div className="flex items-center gap-2">
+            <ThemeSelector />
             <PreviewDialogBtn />
             {!form.published && (
               <>

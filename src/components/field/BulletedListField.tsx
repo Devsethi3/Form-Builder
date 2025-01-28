@@ -11,6 +11,8 @@ import { BsListUl } from "react-icons/bs";
 import { Textarea } from "../ui/textarea";
 import useDesigner from "@/hooks/useDesigner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { cn } from "@/lib/utils";
+import { formThemes } from "@/schemas/form";
 
 const type: ElementsType = "BulletedListField";
 
@@ -67,31 +69,31 @@ type CustomInstance = FormElementInstance & {
   extraAttributes: typeof extraAttributes;
 };
 
-function ListComponent({ items, bulletStyle, fontSize }: { items: string; bulletStyle: BulletStyle; fontSize: FontSize }) {
-  const itemsArray = items.split('\n').filter(item => item.trim() !== '');
-  
+function ListComponent({ items, bulletStyle, fontSize, theme }: { items: string; bulletStyle: BulletStyle; fontSize: FontSize; theme: keyof typeof formThemes }) {
+  const { styles } = formThemes[theme];
+  const itemsArray = items.split("\n").filter((item) => item.length > 0);
+
   return (
-    <div className="flex justify-center w-full">
-      <ul className="list-none space-y-2 w-full max-w-2xl">
-        {itemsArray.map((item, index) => (
-          <li key={index} className={`flex items-start ${fontSizes[fontSize]}`}>
-            <span className="mr-2 min-w-[1.5em] text-center">{bulletStyles[bulletStyle]}</span>
-            <span className="flex-1">{item}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <ul className={cn("flex flex-col gap-1", styles.text)}>
+      {itemsArray.map((item, index) => (
+        <li key={index} className={cn("flex gap-2 items-start", fontSizes[fontSize])}>
+          <span className="select-none">{bulletStyles[bulletStyle]}</span>
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
 function DesignerComponent({ elementInstance }: { elementInstance: FormElementInstance }) {
   const element = elementInstance as CustomInstance;
   const { items, bulletStyle, fontSize } = element.extraAttributes;
-  
+  const { theme } = useDesigner();
+
   return (
     <div className="flex flex-col gap-2 w-full">
-      <Label className="text-muted-foreground">Bulleted List</Label>
-      <ListComponent items={items} bulletStyle={bulletStyle} fontSize={fontSize} />
+      <Label className="text-muted-foreground">Bulleted list field</Label>
+      <ListComponent items={items} bulletStyle={bulletStyle} fontSize={fontSize} theme={theme} />
     </div>
   );
 }
@@ -99,8 +101,9 @@ function DesignerComponent({ elementInstance }: { elementInstance: FormElementIn
 function FormComponent({ elementInstance }: { elementInstance: FormElementInstance }) {
   const element = elementInstance as CustomInstance;
   const { items, bulletStyle, fontSize } = element.extraAttributes;
+  const { theme } = useDesigner();
 
-  return <ListComponent items={items} bulletStyle={bulletStyle} fontSize={fontSize} />;
+  return <ListComponent items={items} bulletStyle={bulletStyle} fontSize={fontSize} theme={theme} />;
 }
 
 type propertiesFormSchemaType = z.infer<typeof propertiesSchema>;

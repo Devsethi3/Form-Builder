@@ -4,6 +4,16 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '10mb'
     }
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+      },
+    ],
+    domains: ['placehold.co'],
+    unoptimized: true
   }
 };
 
