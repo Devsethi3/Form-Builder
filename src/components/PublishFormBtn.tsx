@@ -1,5 +1,5 @@
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useTransition, useState } from "react";
 import { FaSpinner } from "react-icons/fa";
 import { MdOutlinePublish } from "react-icons/md";
 import {
@@ -19,6 +19,7 @@ import { PublishForm } from "@/action/form";
 
 function PublishFormBtn({ id }: { id: number }) {
   const [loading, startTransition] = useTransition();
+  const [open, setOpen] = useState(false);
   const router = useRouter();
 
   async function publishForm() {
@@ -26,19 +27,21 @@ function PublishFormBtn({ id }: { id: number }) {
       await PublishForm(id);
       toast({
         title: "Success",
-        description: "Your form is now available to the public",
+        description: "Your form is now available to the public. You can now generate the embed code.",
       });
+      setOpen(false);
       router.refresh();
     } catch (error) {
       toast({
         title: "Error",
         description: "Something went wrong",
+        variant: "destructive",
       });
     }
   }
 
   return (
-    <AlertDialog>
+    <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
         <Button className="gap-2 text-white bg-gradient-to-r from-indigo-400 to-cyan-400">
           <MdOutlinePublish className="h-4 w-4" />
@@ -49,12 +52,7 @@ function PublishFormBtn({ id }: { id: number }) {
         <AlertDialogHeader>
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. After publishing you will not be able to edit this form. <br />
-            <br />
-            <span className="font-medium">
-              By publishing this form you will make it available to the public and you will be able to collect
-              submissions.
-            </span>
+            This will make your form available to the public. You can generate an embed code after publishing.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -66,7 +64,8 @@ function PublishFormBtn({ id }: { id: number }) {
               startTransition(publishForm);
             }}
           >
-            Proceed {loading && <FaSpinner className="animate-spin ml-2" />}
+            {loading && <FaSpinner className="animate-spin" />}
+            Publish
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -7,13 +7,13 @@ import { FaSpinner } from "react-icons/fa";
 import { UpdateFormContent } from "@/action/form";
 
 function SaveFormBtn({ id }: { id: number }) {
-  const { elements } = useDesigner();
+  const { elements, theme } = useDesigner();
   const [loading, startTransition] = useTransition();
 
   const updateFormContent = async () => {
     try {
       const jsonElements = JSON.stringify(elements);
-      await UpdateFormContent(id, jsonElements);
+      await UpdateFormContent(id, jsonElements, theme);
       toast({
         title: "Success",
         description: "Your form has been saved",

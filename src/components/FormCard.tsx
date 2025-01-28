@@ -26,146 +26,132 @@ import {
 } from "./ui/alert-dialog";
 import { toast } from "./ui/use-toast";
 import { DeleteForm } from "@/action/form";
+import GenerateCodeBtn from "./GenerateCodeBtn";
+import { useState } from "react";
 
-const FormCard = ({ form }: { form: Form }) => {
+interface FormCardProps {
+    form: Form;
+    onDelete?: (formId: number) => void;
+}
 
+const FormCard = ({ form, onDelete }: FormCardProps) => {
     const [loading, startTransition] = useTransition();
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
     const handleDelete = async () => {
         try {
-            console.log("Form deleted", form.id);
-
-            const deleted = await DeleteForm(form.id);
-
-            if (deleted) {
+            startTransition(async () => {
+                await DeleteForm(form.id);
                 toast({
-                    title: "Form Deleted!",
-                    description: "Your form has been deleted successfully!",
-                    duration: 2500,
+                    title: "Success",
+                    description: "Form deleted successfully",
                 });
-            }
-        } catch (error: any) {
-            // Handle error
+                setShowDeleteDialog(false);
+                onDelete?.(form.id);
+            });
+        } catch (error) {
             console.error("Error deleting form:", error);
-
-            if (error.message === "Form not found") {
-                toast({
-                    title: "Error",
-                    description: "The form you're trying to delete does not exist.",
-                    duration: 2500,
-                });
-            } else {
-                toast({
-                    title: "Error",
-                    description: "Failed to delete form. Please try again later.",
-                    duration: 2500,
-                });
-            }
+            toast({
+                title: "Error",
+                description: "Failed to delete form",
+                variant: "destructive",
+            });
         }
     };
 
-
     return (
-        <Card className="min-h-[200px]">
+        <Card>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2 justify-between relative">
-                    <h2 className="font-semibold leading-6 text-[1.2rem] lg:text-[1.4rem]">{form.name}</h2>
-                    {form.published && <Badge>Published</Badge>}
-                    {!form.published && <Badge variant={"destructive"}>Draft</Badge>}
-                    <AlertDialog>
-                        <AlertDialogTrigger>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button size="icon" variant="ghost" className="rounded-full">
-                                        <PiDotsThreeOutlineVerticalFill className="w-4 h-4" />
-                                        <span className="sr-only">Actions</span>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem className="cursor-pointer">
-                                        <RiDeleteBin5Line className="mr-2" />
-                                        Delete
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This action cannot be undone. After deleting the form, you will not be able to retrieve it. <br />
-                                    <br />
-                                    <span className="font-medium">
-                                        By deleting this form, all associated data will be permanently removed from your account.
-                                    </span>
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction className="bg-red-500 text-white hover:bg-red-600"
-                                    disabled={loading}
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        startTransition(handleDelete);
-                                    }}
-                                >
-                                    <p className="flex items-center gap-2" onClick={handleDelete}> <RiDeleteBin5Line />Delete {loading && <FaSpinner className="animate-spin" />}</p>
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                <CardTitle className="flex items-center gap-2 justify-between">
+                    <span className="flex items-center gap-2">
+                        <FaWpforms className="h-6 w-6 text-gray-500" />
+                        {form.name}
+                    </span>
+                    <div className="flex items-center gap-2">
+                        <Badge variant={form.published ? "default" : "secondary"}>
+                            {form.published ? "Published" : "Draft"}
+                        </Badge>
+                        {form.published && (
+                            <Badge variant="secondary" className="flex gap-2">
+                                <LuView className="h-4 w-4" />
+                                {form.visits}
+                            </Badge>
+                        )}
+                    </div>
                 </CardTitle>
-                <CardDescription className="flex items-center justify-between text-muted-foreground text-sm">
-                    {formatDistance(form.createdAt, new Date(), {
-                        addSuffix: true,
-                    })}
-                    {form.published && (
-                        <span className="flex items-center gap-2">
-                            <LuView className="text-muted-foreground" />
-                            <span>{form.visits.toLocaleString()}</span>
-                            <FaWpforms className="text-muted-foreground" />
-                            <span>{form.submissions.toLocaleString()}</span>
-                        </span>
-                    )}
+                <CardDescription>
+                    Created {formatDistance(new Date(form.createdAt), new Date(), { addSuffix: true })}
                 </CardDescription>
             </CardHeader>
             <CardContent className="h-[20px] truncate text-sm text-muted-foreground">
                 {form.description || "No description"}
             </CardContent>
-            <CardFooter>
-                {form.published && (
-                    <Button asChild className="w-full mt-2 text-md gap-4">
-                        <Link href={`/forms/${form.id}`}>
-                            View submissions <BiRightArrowAlt />
-                        </Link>
-                    </Button>
-                )}
-                {!form.published && (
-                    <Button asChild variant={"secondary"} className="w-full mt-2 text-md gap-4">
-                        <Link href={`/builder/${form.id}`}>
-                            Edit form <FaEdit />
-                        </Link>
-                    </Button>
-                )}
+            <CardFooter className="flex items-center justify-between">
+                <div className="flex gap-2">
+                    {form.published ? (
+                        <>
+                            <Button variant="outline" asChild>
+                                <Link href={`/submit/${form.shareURL}`} target="_blank">
+                                    View
+                                </Link>
+                            </Button>
+                            <GenerateCodeBtn id={form.id} />
+                        </>
+                    ) : (
+                        <Button asChild>
+                            <Link href={`/builder/${form.id}`}>
+                                Edit form <BiRightArrowAlt className="ml-2 h-5 w-5" />
+                            </Link>
+                        </Button>
+                    )}
+                </div>
+                <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost" className="rounded-full">
+                                <PiDotsThreeOutlineVerticalFill className="w-4 h-4" />
+                                <span className="sr-only">Actions</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                                className="text-destructive focus:text-destructive cursor-pointer"
+                                onClick={() => setShowDeleteDialog(true)}
+                            >
+                                <RiDeleteBin5Line className="mr-2 h-4 w-4" />
+                                Delete
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will permanently delete the form &ldquo;{form.name}&rdquo; and all its submissions.
+                                This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                                className="bg-destructive hover:bg-destructive/90"
+                                disabled={loading}
+                                onClick={handleDelete}
+                            >
+                                {loading ? (
+                                    <FaSpinner className="animate-spin mr-2 h-4 w-4" />
+                                ) : (
+                                    <RiDeleteBin5Line className="mr-2 h-4 w-4" />
+                                )}
+                                Delete
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </CardFooter>
         </Card>
     );
 };
 
 export default FormCard;
-
-
-{/* <DropdownMenu>
-<DropdownMenuTrigger asChild>
-    <Button size="icon" variant="ghost" className="rounded-full">
-        <PiDotsThreeOutlineVerticalFill className="w-4 h-4" />
-        <span className="sr-only">Actions</span>
-    </Button>
-</DropdownMenuTrigger>
-<DropdownMenuContent align="end">
-    <DropdownMenuItem className="cursor-pointer" onClick={handleDelete}>
-        <RiDeleteBin5Line className="mr-2" />
-        Delete
-    </DropdownMenuItem>
-</DropdownMenuContent>
-</DropdownMenu> */}

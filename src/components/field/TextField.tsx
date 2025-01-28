@@ -13,6 +13,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Switch } from "../ui/switch";
 import { cn } from "@/lib/utils";
 import useDesigner from "@/hooks/useDesigner";
+import { formThemes } from "@/schemas/form";
 
 const type: ElementsType = "TextField";
 
@@ -61,6 +62,7 @@ type CustomInstance = FormElementInstance & {
 
 function DesignerComponent({ elementInstance }: { elementInstance: FormElementInstance }) {
   const element = elementInstance as CustomInstance;
+  const { theme } = useDesigner();
   const { label, required, placeHolder, helperText } = element.extraAttributes;
   return (
     <div className="flex flex-col gap-2 w-full">
@@ -68,7 +70,12 @@ function DesignerComponent({ elementInstance }: { elementInstance: FormElementIn
         {label}
         {required && "*"}
       </Label>
-      <Input readOnly disabled placeholder={placeHolder} />
+      <Input 
+        readOnly 
+        disabled 
+        placeholder={placeHolder}
+        className={formThemes[theme].styles.input}
+      />
       {helperText && <p className="text-muted-foreground text-[0.8rem]">{helperText}</p>}
     </div>
   );
@@ -86,7 +93,7 @@ function FormComponent({
   defaultValue?: string;
 }) {
   const element = elementInstance as CustomInstance;
-
+  const { theme } = useDesigner();
   const [value, setValue] = useState(defaultValue || "");
   const [error, setError] = useState(false);
 
@@ -102,7 +109,10 @@ function FormComponent({
         {required && "*"}
       </Label>
       <Input
-        className={cn(error && "border-red-500")}
+        className={cn(
+          error && "border-red-500",
+          formThemes[theme].styles.input
+        )}
         placeholder={placeHolder}
         onChange={(e) => setValue(e.target.value)}
         onBlur={(e) => {

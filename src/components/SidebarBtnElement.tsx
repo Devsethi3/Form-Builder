@@ -5,7 +5,7 @@ import { useDraggable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 
 function SidebarBtnElement({ formElement }: { formElement: FormElement }) {
-  const { label, icon: Icon } = formElement.designerBtnElement;
+  const { label, icon: Icon } = formElement.designerBtnElement || {};
   const draggable = useDraggable({
     id: `designer-btn-${formElement.type}`,
     data: {
@@ -13,6 +13,8 @@ function SidebarBtnElement({ formElement }: { formElement: FormElement }) {
       isDesignerBtnElement: true,
     },
   });
+
+  if (!Icon || !label) return null;
 
   return (
     <Button
@@ -32,7 +34,9 @@ function SidebarBtnElement({ formElement }: { formElement: FormElement }) {
 }
 
 export function SidebarBtnElementDragOverlay({ formElement }: { formElement: FormElement }) {
-  const { label, icon: Icon } = formElement.designerBtnElement;
+  const { label, icon: Icon } = formElement.designerBtnElement || {};
+
+  if (!Icon || !label) return null;
 
   return (
     <Button variant={"outline"} className="flex flex-col gap-2 h-[120px] w-[120px] cursor-grab">

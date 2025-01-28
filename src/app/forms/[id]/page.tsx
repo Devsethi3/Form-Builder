@@ -10,7 +10,7 @@ import { format, formatDistance } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { GetFormById, GetFormWithSubmissions } from "@/action/form";
-import { StatsCard } from "@/app/(routes)/dashboard/page";
+import { StatsCard } from "@/components/ui/stats-card";
 import ShareForm from "@/components/ShareForm";
 
 async function FormDetailPage({

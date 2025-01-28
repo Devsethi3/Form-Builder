@@ -1,6 +1,7 @@
 "use client";
 
 import { FormElementInstance } from "@/components/FormElements";
+import { formThemes } from "@/schemas/form";
 import { Dispatch, ReactNode, SetStateAction, createContext, useState } from "react";
 
 type DesignerContextType = {
@@ -13,6 +14,9 @@ type DesignerContextType = {
     setSelectedElement: Dispatch<SetStateAction<FormElementInstance | null>>;
 
     updateElement: (id: string, element: FormElementInstance) => void;
+
+    theme: keyof typeof formThemes;
+    setTheme: Dispatch<SetStateAction<keyof typeof formThemes>>;
 };
 
 export const DesignerContext = createContext<DesignerContextType | null>(null);
@@ -20,6 +24,7 @@ export const DesignerContext = createContext<DesignerContextType | null>(null);
 export default function DesignerContextProvider({ children }: { children: ReactNode }) {
     const [elements, setElements] = useState<FormElementInstance[]>([]);
     const [selectedElement, setSelectedElement] = useState<FormElementInstance | null>(null);
+    const [theme, setTheme] = useState<keyof typeof formThemes>("default");
 
     const addElement = (index: number, element: FormElementInstance) => {
         setElements((prev) => {
@@ -49,11 +54,11 @@ export default function DesignerContextProvider({ children }: { children: ReactN
                 setElements,
                 addElement,
                 removeElement,
-
                 selectedElement,
                 setSelectedElement,
-
                 updateElement,
+                theme,
+                setTheme,
             }}
         >
             {children}

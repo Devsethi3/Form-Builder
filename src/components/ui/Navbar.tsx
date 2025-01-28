@@ -21,7 +21,7 @@ const Navbar = () => {
                 <div className="py-0.5 lg:py-2 dark:bg-[#030712]  bg-[#fcfdff] backdrop-blur-md">
                     <div className="flex items-center justify-between container">
                         <Link href="/" className="flex items-center gap-3">
-                            <Image src="/logo.svg" width={45} height={45} alt="logo" />
+                            <Image src="/logo.svg" width={45} height={45} alt="logo" style={{ width: 'auto', height: '45px' }} />
                             {user && (
                                 <h1 className="text-2xl lg:text-3xl font-bold">QuickForm</h1>
                             )}
@@ -73,4 +73,3 @@ const Navbar = () => {
 }
 
 export default Navbar
-

@@ -2,11 +2,12 @@ import React from "react";
 import { Button } from "./ui/button";
 import { MdPreview } from "react-icons/md";
 import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
-import { FormElements, ElementsType } from "./FormElements"; // Ensure ElementsType is imported
+import { FormElements, ElementsType } from "./FormElements";
 import useDesigner from "@/hooks/useDesigner";
+import { formThemes } from "@/schemas/form";
 
 function PreviewDialogBtn() {
-  const { elements } = useDesigner();
+  const { elements, theme } = useDesigner();
 
   return (
     <Dialog>
@@ -22,7 +23,10 @@ function PreviewDialogBtn() {
           <p className="text-sm text-muted-foreground">This is how your form will look like to your users.</p>
         </div>
         <div className="bg-accent flex flex-col flex-grow items-center justify-center p-4 bg-[url(/paper.svg)] dark:bg-[url(/paper-dark.svg)] overflow-y-auto">
-          <div className="max-w-[620px] flex flex-col gap-4 flex-grow bg-background h-full w-full rounded-2xl p-8 overflow-y-auto">
+          <div className={`max-w-[620px] flex flex-col gap-4 flex-grow h-full w-full rounded-2xl p-8 overflow-y-auto
+            ${formThemes[theme].styles.background}
+            ${formThemes[theme].styles.text}
+            ${formThemes[theme].styles.border}`}>
             {elements.map((element) => {
               const elementType = element.type as ElementsType; // Assert type as ElementsType
               const FormComponent = FormElements[elementType].formComponent;

@@ -50,7 +50,7 @@ function DesignerComponent({ elementInstance }: { elementInstance: FormElementIn
   return (
     <div className="flex flex-col gap-2 w-full">
       <Label className="text-muted-foreground">Paragraph field</Label>
-      <p className="truncate">{text}</p>
+      <p className="text-muted-foreground whitespace-pre-wrap break-words">{text}</p>
     </div>
   );
 }

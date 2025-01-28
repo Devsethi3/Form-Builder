@@ -13,8 +13,10 @@ function FormElementsSidebar() {
         <SidebarBtnElement formElement={FormElements.TitleField} />
         <SidebarBtnElement formElement={FormElements.SubTitleField} />
         <SidebarBtnElement formElement={FormElements.ParagraphField} />
+        <SidebarBtnElement formElement={FormElements.BulletedListField} />
         <SidebarBtnElement formElement={FormElements.SeparatorField} />
         <SidebarBtnElement formElement={FormElements.SpacerField} />
+        <SidebarBtnElement formElement={FormElements.ImageElement} />
 
         <p className="text-sm text-muted-foreground col-span-1 md:col-span-2 my-2 place-self-start">Form elements</p>
         <SidebarBtnElement formElement={FormElements.TextField} />
@@ -23,6 +25,10 @@ function FormElementsSidebar() {
         <SidebarBtnElement formElement={FormElements.DateField} />
         <SidebarBtnElement formElement={FormElements.SelectField} />
         <SidebarBtnElement formElement={FormElements.CheckboxField} />
+        <SidebarBtnElement formElement={FormElements.ImageUploadField} />
+        <SidebarBtnElement formElement={FormElements.RatingScaleField} />
+        <SidebarBtnElement formElement={FormElements.DualImageUpload} />
+        <SidebarBtnElement formElement={FormElements.PictureSelectField} />
       </div>
     </div>
   );

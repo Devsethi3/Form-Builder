@@ -2,13 +2,23 @@
 
 import React, { useCallback, useRef, useState, useTransition } from "react";
 import { FormElementInstance, FormElements } from "./FormElements";
+import { formThemes } from "@/schemas/form";
+import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { HiCursorClick } from "react-icons/hi";
 import { toast } from "./ui/use-toast";
 import { ImSpinner2 } from "react-icons/im";
 import { SubmitForm } from "@/action/form";
 
-function FormSubmitComponent({ formUrl, content }: { content: FormElementInstance[]; formUrl: string }) {
+function FormSubmitComponent({ 
+  formUrl, 
+  content, 
+  theme = "default" 
+}: { 
+  content: FormElementInstance[]; 
+  formUrl: string;
+  theme?: keyof typeof formThemes;
+}) {
   const formValues = useRef<{ [key: string]: string }>({});
   const formErrors = useRef<{ [key: string]: boolean }>({});
   const [renderKey, setRenderKey] = useState(new Date().getTime());
@@ -78,7 +88,10 @@ function FormSubmitComponent({ formUrl, content }: { content: FormElementInstanc
     <div className="flex justify-center w-full h-full items-center p-2 lg:p-8">
       <div
         key={renderKey}
-        className="max-w-[620px] flex flex-col gap-4 flex-grow bg-background w-full p-8 overflow-y-auto border shadow-md dark:shadow-white/20 rounded-md"
+        className={`max-w-[620px] flex flex-col gap-4 flex-grow w-full p-8 overflow-y-auto border shadow-md dark:shadow-white/20 rounded-md
+          ${formThemes[theme].styles.background}
+          ${formThemes[theme].styles.text}
+          ${formThemes[theme].styles.border}`}
       >
         {content.map((element) => {
           const FormElement = FormElements[element.type].formComponent;
@@ -92,8 +105,11 @@ function FormSubmitComponent({ formUrl, content }: { content: FormElementInstanc
             />
           );
         })}
-        <Button
-          className="mt-8"
+          <Button
+            className={cn(
+              "mt-8",
+              formThemes[theme].styles.primary
+            )}
           onClick={() => {
             startTransition(submitForm);
           }}
