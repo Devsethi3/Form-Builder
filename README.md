@@ -2,10 +2,6 @@
 
 Welcome to the Quick Form App repository! This project is a Next.js-based web application designed to facilitate easy form creation and management. With features like drag-and-drop form building, theme toggling, and a personalized dashboard, users can create custom forms, submit data, and manage submissions efficiently. The app integrates Prisma and PostgreSQL for data storage and Clerk for secure authentication.
 
-## Demo
-
-Check out the live demo of the Quick Form App [here](https://quick-form-one.vercel.app).
-
 ## Preview
 
 ### 1. User Dashboard
