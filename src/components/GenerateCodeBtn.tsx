@@ -1,5 +1,5 @@
 import { useRouter } from "next/navigation";
-import { useTransition, useState, useEffect } from "react";
+import { useTransition, useState, useEffect, useCallback } from "react";
 import { FaCode, FaCopy } from "react-icons/fa";
 import {
   AlertDialog,
@@ -34,13 +34,7 @@ function GenerateCodeBtn({ id }: { id: number }) {
   const [activeTab, setActiveTab] = useState("embedCode");
   const router = useRouter();
 
-  useEffect(() => {
-    if (open) {
-      startTransition(generateEmbedCode);
-    }
-  }, [open]);
-
-  async function generateEmbedCode() {
+  const generateEmbedCode = useCallback(async () => {
     try {
       // Check if form is published first
       const form = await GetFormById(id);
@@ -54,8 +48,8 @@ function GenerateCodeBtn({ id }: { id: number }) {
         return;
       }
 
-      const result = await GenerateEmbedCode(id);
-      setEmbedCode(result.embedCode);
+      const code = await GenerateEmbedCode(id);
+      setEmbedCode(code.embedCode);
       toast({
         title: "Success",
         description: "Embed code has been generated. Click the copy button to copy it.",
@@ -64,11 +58,17 @@ function GenerateCodeBtn({ id }: { id: number }) {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Something went wrong generating the embed code",
+        description: "Something went wrong while generating the embed code.",
         variant: "destructive",
       });
     }
-  }
+  }, [id, router]);
+
+  useEffect(() => {
+    if (open) {
+      startTransition(generateEmbedCode);
+    }
+  }, [open, generateEmbedCode]);
 
   const copyToClipboard = async () => {
     try {

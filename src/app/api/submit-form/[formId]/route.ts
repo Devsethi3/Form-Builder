@@ -23,31 +23,24 @@ export async function POST(
       return new NextResponse("Form not found", { status: 404 });
     }
 
-    // Save the submission and analytics
-    const submission = await prisma.submission.create({
+    // Save the submission
+    const submission = await prisma.formSubmissions.create({
       data: {
         formId,
         content: JSON.stringify(data),
       },
     });
 
-    // Track analytics
-    await prisma.analytics.create({
-      data: {
-        formId,
-        submissionId: submission.id,
-        event: 'FORM_SUBMISSION',
-        metadata: JSON.stringify({
-          timestamp: new Date().toISOString(),
-          userAgent: request.headers.get('user-agent'),
-          referer: request.headers.get('referer'),
-          origin: request.headers.get('origin'),
-          fieldCount: Object.keys(data).length,
-        }),
-      },
+    // Update form submission count
+    await prisma.form.update({
+      where: { id: formId },
+      data: { submissions: { increment: 1 } },
     });
 
-    return new NextResponse(JSON.stringify({ success: true }), {
+    return new NextResponse(JSON.stringify({
+      data: submission,
+      message: "Form submitted successfully",
+    }), {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',

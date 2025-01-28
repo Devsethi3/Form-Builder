@@ -10,6 +10,7 @@ import { useEffect, useState, useRef } from "react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { BsCardImage } from "react-icons/bs";
 import useDesigner from "@/hooks/useDesigner";
+import NextImage from "next/image";
 
 type CustomInstance = FormElementInstance & {
   extraAttributes: {
@@ -221,9 +222,11 @@ function FormComponent({
         {[0, 1].map((i) => (
           <div key={i} className={`${height} border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50 mx-auto w-64`}>
             {previewUrls[i] ? (
-              <img 
-                src={previewUrls[i] || undefined} 
+              <NextImage 
+                src={previewUrls[i] || ''} 
                 alt="Preview" 
+                width={256}
+                height={256}
                 className="max-w-full max-h-full object-contain"
               />
             ) : (

@@ -128,7 +128,7 @@ const FormCard = ({ form, onDelete }: FormCardProps) => {
                         <AlertDialogHeader>
                             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This will permanently delete the form "{form.name}" and all its submissions.
+                                This will permanently delete the form &ldquo;{form.name}&rdquo; and all its submissions.
                                 This action cannot be undone.
                             </AlertDialogDescription>
                         </AlertDialogHeader>

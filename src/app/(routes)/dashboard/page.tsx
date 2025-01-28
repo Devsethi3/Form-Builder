@@ -1,5 +1,5 @@
 "use client";
-
+import { StatsCard } from "@/components/ui/stats-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ReactNode, Suspense, useEffect, useState } from "react";
@@ -117,23 +117,6 @@ interface StatsCardProps {
   className: string;
   loading: boolean;
   icon: ReactNode;
-}
-
-function StatsCard({ title, value, icon, helperText, loading, className }: StatsCardProps) {
-  return (
-    <Card className={className}>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        {icon}
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">
-          {loading ? <Skeleton className="h-8 w-24" /> : value}
-        </div>
-        <p className="text-xs text-muted-foreground pt-1">{helperText}</p>
-      </CardContent>
-    </Card>
-  );
 }
 
 function FormCardSkeleton() {

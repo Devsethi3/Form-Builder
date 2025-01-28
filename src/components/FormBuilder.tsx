@@ -69,7 +69,7 @@ function FormBuilder({ form }: { form: Form }) {
     setTheme(theme);
     const readyTimeout = setTimeout(() => setIsReady(true), 500);
     return () => clearTimeout(readyTimeout);
-  }, [form, setElements, isReady, setSelectedElement]);
+  }, [form, setElements, isReady, setSelectedElement, setTheme]);
 
   if (!isReady) {
     return (

@@ -10,6 +10,7 @@ import { useEffect, useState, useRef } from "react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { BsCardImage } from "react-icons/bs";
 import useDesigner from "@/hooks/useDesigner";
+import NextImage from "next/image";
 
 type CustomInstance = FormElementInstance & {
   extraAttributes: {
@@ -201,9 +202,11 @@ function FormComponent({
       </Label>
       <div className={`${width} ${height} border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50 mx-auto`}>
         {previewUrl ? (
-          <img 
+          <NextImage 
             src={previewUrl} 
             alt="Preview" 
+            width={400}
+            height={400}
             className="max-w-full max-h-full object-contain"
           />
         ) : (

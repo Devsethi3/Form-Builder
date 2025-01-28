@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { BsCardImage } from "react-icons/bs";
 import { Upload, X } from 'lucide-react';
 import useDesigner from "@/hooks/useDesigner";
+import Image from "next/image";
 
 type ImageOption = {
   src: string;
@@ -91,9 +92,11 @@ function DesignerComponent({ elementInstance }: { elementInstance: FormElementIn
           <div key={index} className="flex flex-col items-center">
             <div className="w-full space-y-2">
               <div className="relative">
-                <img
+                <Image
                   src={image.src}
                   alt={image.label}
+                  width={400}
+                  height={300}
                   className="w-full h-48 object-contain rounded-lg border-2 border-gray-300"
                 />
               </div>
@@ -145,9 +148,11 @@ function FormComponent({
                 onChange={() => handleImageSelect(image.label)}
                 className="sr-only"
               />
-              <img
+              <Image
                 src={image.src}
                 alt={image.label}
+                width={400}
+                height={300}
                 className={`w-full h-48 object-contain rounded-lg ${
                   selectedImage === image.label ? 'ring-4 ring-blue-500' : ''
                 }`}
@@ -350,9 +355,11 @@ function PropertiesComponent({ elementInstance }: { elementInstance: FormElement
                         onChange={(e) => handleImageUpload(e, index)}
                         className="sr-only"
                       />
-                      <img
+                      <Image
                         src={image.src}
                         alt={image.label}
+                        width={400}
+                        height={300}
                         className="w-full h-48 object-contain rounded-lg"
                       />
                       <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 hover:opacity-100 transition-opacity rounded-lg">
