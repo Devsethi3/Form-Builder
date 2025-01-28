@@ -11,18 +11,24 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { BsCardImage } from "react-icons/bs";
 import useDesigner from "@/hooks/useDesigner";
 import NextImage from "next/image";
+import { Button } from "../ui/button";
+import { Checkbox } from "../ui/checkbox";
+
+const type: ElementsType = "ImageUploadField";
+
+const extraAttributes = {
+  label: "Image Upload",
+  helperText: "Upload an image file",
+  required: false,
+  prompt: "Upload an image",
+  buttonText: "Choose File",
+  width: "w-96",
+  height: "h-64",
+  maxDimension: 800,
+};
 
 type CustomInstance = FormElementInstance & {
-  extraAttributes: {
-    label: string;
-    helperText: string;
-    required: boolean;
-    prompt: string;
-    buttonText: string;
-    width: string;
-    height: string;
-    maxDimension: number;
-  };
+  extraAttributes: typeof extraAttributes;
 };
 
 const propertiesSchema = z.object({
@@ -35,41 +41,6 @@ const propertiesSchema = z.object({
   height: z.string(),
   maxDimension: z.number().min(100).max(2000),
 });
-
-export const ImageUploadFormElement: FormElement = {
-  type: "ImageUploadField",
-  construct: (id: string) => ({
-    id,
-    type: "ImageUploadField",
-    extraAttributes: {
-      label: "Image Upload",
-      helperText: "Upload an image file",
-      required: false,
-      prompt: "Upload an image",
-      buttonText: "Choose File",
-      width: "w-96",
-      height: "h-64",
-      maxDimension: 800,
-    },
-  }),
-
-  designerBtnElement: {
-    icon: BsCardImage,
-    label: "Image Upload",
-  },
-
-  designerComponent: DesignerComponent,
-  formComponent: FormComponent,
-  propertiesComponent: PropertiesComponent,
-
-  validate: (formElement: FormElementInstance, currentValue: string): boolean => {
-    const element = formElement as CustomInstance;
-    if (element.extraAttributes.required) {
-      return currentValue.length > 0;
-    }
-    return true;
-  },
-};
 
 function DesignerComponent({ elementInstance }: { elementInstance: FormElementInstance }) {
   const element = elementInstance as CustomInstance;
@@ -109,49 +80,48 @@ function FormComponent({
   defaultValue?: string;
 }) {
   const element = elementInstance as CustomInstance;
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [fileName, setFileName] = useState("No file chosen");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(defaultValue || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { prompt, buttonText, width, height, maxDimension } = element.extraAttributes;
 
-  const resizeImage = (originalFile: File): Promise<File> => {
+  const resizeImage = async (originalFile: File): Promise<File> => {
     return new Promise((resolve) => {
       const img = new Image();
       img.src = URL.createObjectURL(originalFile);
-      
+
       img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d')!;
+
+        // Calculate new dimensions while maintaining aspect ratio
         let newWidth = img.width;
         let newHeight = img.height;
-        
-        if (img.width > maxDimension || img.height > maxDimension) {
-          if (img.width > img.height) {
+
+        if (newWidth > maxDimension || newHeight > maxDimension) {
+          if (newWidth > newHeight) {
+            newHeight = (newHeight / newWidth) * maxDimension;
             newWidth = maxDimension;
-            newHeight = (img.height / img.width) * maxDimension;
           } else {
+            newWidth = (newWidth / newHeight) * maxDimension;
             newHeight = maxDimension;
-            newWidth = (img.width / img.height) * maxDimension;
           }
         }
 
-        const canvas = document.createElement('canvas');
         canvas.width = newWidth;
         canvas.height = newHeight;
-        
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, newWidth, newHeight);
-          
-          canvas.toBlob((blob) => {
-            if (blob) {
-              const resizedFile = new File([blob], originalFile.name, {
-                type: originalFile.type,
-                lastModified: Date.now(),
-              });
-              
-              resolve(resizedFile);
-            }
-          }, originalFile.type);
-        }
+
+        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const resizedFile = new File([blob], originalFile.name, {
+              type: originalFile.type,
+              lastModified: Date.now(),
+            });
+            resolve(resizedFile);
+          }
+        }, originalFile.type);
 
         URL.revokeObjectURL(img.src);
       };
@@ -171,17 +141,17 @@ function FormComponent({
     const file = event.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
       setFileName(file.name);
-      
+
       let finalFile = file;
-      
+
       const img = new Image();
       img.src = URL.createObjectURL(file);
-      
+
       img.onload = async () => {
         if (img.width > maxDimension || img.height > maxDimension) {
           finalFile = await resizeImage(file);
         }
-        
+
         URL.revokeObjectURL(img.src);
         
         // Convert the final image to base64 and set preview
@@ -194,6 +164,10 @@ function FormComponent({
     }
   };
 
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className="flex flex-col gap-2 w-full">
       <Label className={`${isInvalid ? "text-red-500" : ""} text-center w-full pb-2`}>
@@ -203,8 +177,8 @@ function FormComponent({
       <div className={`${width} ${height} border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50 mx-auto`}>
         {previewUrl ? (
           <NextImage 
-            src={previewUrl} 
-            alt="Preview" 
+            src={previewUrl}
+            alt="Preview"
             width={400}
             height={400}
             className="max-w-full max-h-full object-contain"
@@ -219,36 +193,29 @@ function FormComponent({
                 d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" 
               />
             </svg>
+            <p className="text-sm text-center">{prompt}</p>
           </div>
         )}
       </div>
-      <div className="text-sm text-gray-600 max-w-prose text-center px-4 whitespace-normal">
-        {prompt}
-      </div>
-      <div className="flex w-full max-w-xs">
+      <div className="flex justify-center items-center gap-2">
         <input
           type="file"
-          ref={fileInputRef}
-          onChange={handleFileSelect}
           accept="image/*"
+          onChange={handleFileSelect}
           className="hidden"
+          ref={fileInputRef}
         />
-        <div 
-          className="flex w-full cursor-pointer"
-          onClick={() => fileInputRef.current?.click()}
+        <Button
+          onClick={handleButtonClick}
+          variant="outline"
+          className="px-4 py-2"
         >
-          <div className="bg-blue-500 text-white px-4 py-2 rounded-l-lg hover:bg-blue-600 transition-colors duration-200">
-            {buttonText}
-          </div>
-          <div className="flex-1 px-4 py-2 bg-gray-100 text-gray-600 truncate rounded-r-lg border-y border-r border-gray-200">
-            {fileName}
-          </div>
-        </div>
+          {buttonText}
+        </Button>
+        <span className="text-sm text-gray-500">{fileName}</span>
       </div>
       {element.extraAttributes.helperText && (
-        <p className={`text-[0.8rem] ${isInvalid ? "text-red-500" : "text-muted-foreground"}`}>
-          {element.extraAttributes.helperText}
-        </p>
+        <p className="text-muted-foreground text-[0.8rem]">{element.extraAttributes.helperText}</p>
       )}
     </div>
   );
@@ -279,9 +246,19 @@ function PropertiesComponent({ elementInstance }: { elementInstance: FormElement
   }, [element, form]);
 
   function applyChanges(values: propertiesFormSchemaType) {
+    const { label, helperText, required, prompt, buttonText, width, height, maxDimension } = values;
     updateElement(element.id, {
       ...element,
-      extraAttributes: values,
+      extraAttributes: {
+        label,
+        helperText,
+        required,
+        prompt,
+        buttonText,
+        width,
+        height,
+        maxDimension,
+      },
     });
   }
 
@@ -304,45 +281,7 @@ function PropertiesComponent({ elementInstance }: { elementInstance: FormElement
                 <Input
                   {...field}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") e.currentTarget.blur();
-                  }}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="prompt"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Prompt Text</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") e.currentTarget.blur();
-                  }}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="buttonText"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Button Text</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") e.currentTarget.blur();
+                    if (e.key === "Enter") e.preventDefault();
                   }}
                 />
               </FormControl>
@@ -361,7 +300,45 @@ function PropertiesComponent({ elementInstance }: { elementInstance: FormElement
                 <Input
                   {...field}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") e.currentTarget.blur();
+                    if (e.key === "Enter") e.preventDefault();
+                  }}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="prompt"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Prompt text</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") e.preventDefault();
+                  }}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="buttonText"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Button text</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") e.preventDefault();
                   }}
                 />
               </FormControl>
@@ -375,12 +352,12 @@ function PropertiesComponent({ elementInstance }: { elementInstance: FormElement
           name="width"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Width (Tailwind class)</FormLabel>
+              <FormLabel>Width</FormLabel>
               <FormControl>
                 <Input
                   {...field}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") e.currentTarget.blur();
+                    if (e.key === "Enter") e.preventDefault();
                   }}
                 />
               </FormControl>
@@ -394,12 +371,12 @@ function PropertiesComponent({ elementInstance }: { elementInstance: FormElement
           name="height"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Height (Tailwind class)</FormLabel>
+              <FormLabel>Height</FormLabel>
               <FormControl>
                 <Input
                   {...field}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") e.currentTarget.blur();
+                    if (e.key === "Enter") e.preventDefault();
                   }}
                 />
               </FormControl>
@@ -413,16 +390,13 @@ function PropertiesComponent({ elementInstance }: { elementInstance: FormElement
           name="maxDimension"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Max Dimension (pixels)</FormLabel>
+              <FormLabel>Max dimension (px)</FormLabel>
               <FormControl>
                 <Input
                   {...field}
                   type="number"
-                  min={100}
-                  max={2000}
-                  onChange={(e) => field.onChange(parseInt(e.target.value))}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") e.currentTarget.blur();
+                    if (e.key === "Enter") e.preventDefault();
                   }}
                 />
               </FormControl>
@@ -435,18 +409,14 @@ function PropertiesComponent({ elementInstance }: { elementInstance: FormElement
           control={form.control}
           name="required"
           render={({ field }) => (
-            <FormItem className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-              <div className="space-y-0.5">
-                <FormLabel>Required</FormLabel>
-              </div>
+            <FormItem className="flex items-center gap-2 space-y-0">
               <FormControl>
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={field.value}
-                  onChange={field.onChange}
-                  className="accent-primary"
+                  onCheckedChange={field.onChange}
                 />
               </FormControl>
+              <FormLabel>Required</FormLabel>
             </FormItem>
           )}
         />
@@ -454,3 +424,22 @@ function PropertiesComponent({ elementInstance }: { elementInstance: FormElement
     </Form>
   );
 }
+
+export const ImageUploadFieldFormElement: FormElement = {
+  type,
+  construct: (id: string) => ({
+    id,
+    type,
+    extraAttributes,
+  }),
+  designerBtnElement: {
+    icon: BsCardImage,
+    label: "Image Upload",
+  },
+  designerComponent: DesignerComponent,
+  formComponent: FormComponent,
+  propertiesComponent: PropertiesComponent,
+  validate: (formElement: FormElementInstance, currentValue: string) => {
+    return true;
+  },
+};
