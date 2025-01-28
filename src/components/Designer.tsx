@@ -12,7 +12,7 @@ import useDesigner from "@/hooks/useDesigner";
 import { formThemes } from "@/schemas/form";
 
 function Designer() {
-    const { elements, addElement, selectedElement, setSelectedElement, removeElement, theme } = useDesigner();
+    const { elements, addElement, selectedElement, setSelectedElement, removeElement, theme, updateElement } = useDesigner();
 
     const droppable = useDroppable({
         id: "designer-drop-area",
@@ -28,16 +28,60 @@ function Designer() {
 
             const isDesignerBtnElement = active.data?.current?.isDesignerBtnElement;
             const isDroppingOverDesignerDropArea = over.data?.current?.isDesignerDropArea;
+            const isDroppingOverColumn = over.data?.current?.isColumnDropArea;
 
             const droppingSidebarBtnOverDesignerDropArea = isDesignerBtnElement && isDroppingOverDesignerDropArea;
 
             // First
-            
             if (droppingSidebarBtnOverDesignerDropArea) {
                 const type = active.data?.current?.type;
                 const newElement = FormElements[type as ElementsType].construct(idGenerator());
 
                 addElement(elements.length, newElement);
+                return;
+            }
+
+            // Handle dropping into columns
+            if (isDroppingOverColumn) {
+                const type = active.data?.current?.type;
+                const columnId = over.data?.current?.columnId;
+                const parentId = over.data?.current?.elementId;
+                
+                // Find the parent TwoColumnLayout element
+                const parentIndex = elements.findIndex((el) => el.id === parentId);
+                if (parentIndex === -1) return;
+                
+                const parent = { ...elements[parentIndex] };
+                const isDesignerElement = active.data?.current?.isDesignerElement;
+                
+                let elementToAdd;
+                if (isDesignerElement) {
+                    // Moving an existing element
+                    const activeId = active.data?.current?.elementId;
+                    const activeElementIndex = elements.findIndex((el) => el.id === activeId);
+                    if (activeElementIndex === -1) return;
+                    
+                    elementToAdd = { ...elements[activeElementIndex] };
+                    // Remove from main elements array if it's there
+                    removeElement(activeId);
+                    
+                    // Also remove from other columns if it exists there
+                    const otherColumn = columnId === 'left' ? 'rightColumn' : 'leftColumn';
+                    parent.extraAttributes[otherColumn] = parent.extraAttributes[otherColumn].filter(
+                        (el: FormElementInstance) => el.id !== activeId
+                    );
+                } else {
+                    // Creating a new element from sidebar
+                    elementToAdd = FormElements[type as ElementsType].construct(idGenerator());
+                }
+                
+                // Add to the appropriate column
+                const column = columnId === 'left' ? 'leftColumn' : 'rightColumn';
+                parent.extraAttributes[column] = [...parent.extraAttributes[column], elementToAdd];
+                
+                // Update the parent element
+                elements[parentIndex] = parent;
+                updateElement(parentId, parent);
                 return;
             }
 
@@ -144,7 +188,7 @@ function Designer() {
 }
 
 function DesignerElementWrapper({ element }: { element: FormElementInstance }) {
-    const { removeElement, selectedElement, setSelectedElement } = useDesigner();
+    const { removeElement, selectedElement, setSelectedElement, updateElement } = useDesigner();
 
     const [mouseIsOver, setMouseIsOver] = useState<boolean>(false);
     const topHalf = useDroppable({

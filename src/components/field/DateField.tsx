@@ -18,6 +18,7 @@ import useDesigner from "@/hooks/useDesigner";
 import { Input } from "../ui/input";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
+import { formThemes } from "@/schemas/form";
 
 const type: ElementsType = "DateField";
 
@@ -65,17 +66,28 @@ type CustomInstance = FormElementInstance & {
 function DesignerComponent({ elementInstance }: { elementInstance: FormElementInstance }) {
   const element = elementInstance as CustomInstance;
   const { label, required, placeHolder, helperText } = element.extraAttributes;
+  const { theme } = useDesigner();
+  const { styles } = formThemes[theme];
+
   return (
     <div className="flex flex-col gap-2 w-full">
-      <Label>
+      <Label className={styles.text}>
         {label}
         {required && "*"}
       </Label>
-      <Button variant={"outline"} className="w-full justify-start text-left font-normal">
-        <CalendarIcon className="mr-2 h-4 w-4" />
+      <Button 
+        variant={"outline"} 
+        className={cn(
+          "w-full justify-start text-left font-normal",
+          styles.text,
+          styles.input,
+          styles.border
+        )}
+      >
+        <CalendarIcon className={cn("mr-2 h-4 w-4", styles.text)} />
         <span>Pick a date</span>
       </Button>
-      {helperText && <p className="text-muted-foreground text-[0.8rem]">{helperText}</p>}
+      {helperText && <p className={cn("text-[0.8rem]", styles.muted)}>{helperText}</p>}
     </div>
   );
 }
@@ -92,19 +104,21 @@ function FormComponent({
   defaultValue?: string;
 }) {
   const element = elementInstance as CustomInstance;
+  const { theme } = useDesigner();
+  const { styles } = formThemes[theme];
 
   const [date, setDate] = useState<Date | undefined>(defaultValue ? new Date(defaultValue) : undefined);
-
   const [error, setError] = useState(false);
 
   useEffect(() => {
     setError(isInvalid === true);
   }, [isInvalid]);
 
-  const { label, required, placeHolder, helperText } = element.extraAttributes;
+  const { label, required, helperText } = element.extraAttributes;
+
   return (
     <div className="flex flex-col gap-2 w-full">
-      <Label className={cn(error && "text-red-500")}>
+      <Label className={cn(styles.text, error && "text-red-500")}>
         {label}
         {required && "*"}
       </Label>
@@ -114,21 +128,23 @@ function FormComponent({
             variant={"outline"}
             className={cn(
               "w-full justify-start text-left font-normal",
-              !date && "text-muted-foreground",
+              !date && styles.muted,
               error && "border-red-500",
+              styles.text,
+              styles.input,
+              styles.border
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
+            <CalendarIcon className={cn("mr-2 h-4 w-4", styles.text)} />
             {date ? format(date, "PPP") : <span>Pick a date</span>}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent className={cn("w-auto p-0", styles.background, styles.border)} align="start">
           <Calendar
             mode="single"
             selected={date}
             onSelect={(date) => {
               setDate(date);
-
               if (!submitValue) return;
               const value = date?.toUTCString() || "";
               const valid = DateFieldFormElement.validate(element, value);
@@ -136,10 +152,11 @@ function FormComponent({
               submitValue(element.id, value);
             }}
             initialFocus
+            className={cn(styles.text)}
           />
         </PopoverContent>
       </Popover>
-      {helperText && <p className={cn("text-muted-foreground text-[0.8rem]", error && "text-red-500")}>{helperText}</p>}
+      {helperText && <p className={cn("text-[0.8rem]", error ? "text-red-500" : styles.muted)}>{helperText}</p>}
     </div>
   );
 }

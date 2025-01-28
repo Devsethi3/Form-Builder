@@ -17,6 +17,7 @@ function FormElementsSidebar() {
         <SidebarBtnElement formElement={FormElements.SeparatorField} />
         <SidebarBtnElement formElement={FormElements.SpacerField} />
         <SidebarBtnElement formElement={FormElements.ImageElement} />
+        <SidebarBtnElement formElement={FormElements.TwoColumnLayoutField} />
 
         <p className="text-sm text-muted-foreground col-span-1 md:col-span-2 my-2 place-self-start">Form elements</p>
         <SidebarBtnElement formElement={FormElements.TextField} />

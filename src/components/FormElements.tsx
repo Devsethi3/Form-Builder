@@ -15,6 +15,7 @@ import { ImageUploadFieldFormElement } from "./field/ImageUploadField";
 import { RatingScaleFormElement } from "./field/RatingScaleField";
 import { ImageFormElement } from "./field/ImageElement";
 import { BulletedListFieldFormElement } from "./field/BulletedListField";
+import { TwoColumnLayoutFieldFormElement } from "./field/TwoColumnLayoutField";
 
 export type ElementsType =
   | "TextField"
@@ -33,7 +34,8 @@ export type ElementsType =
   | "BulletedListField"
   | "RatingScaleField"
   | "DualImageUpload"
-  | "PictureSelectField";
+  | "PictureSelectField"
+  | "TwoColumnLayoutField";
 
 export type SubmitFunction = (key: string, value: string) => void;
 
@@ -89,8 +91,9 @@ export const FormElements: FormElementsType = {
   CheckboxField: CheckboxFieldFormElement,
   ImageElement: ImageFormElement,
   ImageUploadField: ImageUploadFieldFormElement,
-  DualImageUpload: DualImageUploadFormElement,
-  RatingScaleField: RatingScaleFormElement,
-  PictureSelectField: PictureSelectFormElement,
   BulletedListField: BulletedListFieldFormElement,
+  RatingScaleField: RatingScaleFormElement,
+  DualImageUpload: DualImageUploadFormElement,
+  PictureSelectField: PictureSelectFormElement,
+  TwoColumnLayoutField: TwoColumnLayoutFieldFormElement,
 } satisfies FormElementsType;
