@@ -13,6 +13,8 @@ import { TitleFieldFormElement } from "./field/TitleField";
 import { DualImageUploadFormElement } from "./field/DualImageUpload";
 import { ImageUploadFormElement } from "./field/ImageUploadField";
 import { RatingScaleFormElement } from "./field/RatingScaleField";
+import { ImageFormElement } from "./field/ImageElement";
+import { BulletedListFieldFormElement } from "./field/BulletedListField";
 
 export type ElementsType =
   | "TextField"
@@ -26,7 +28,9 @@ export type ElementsType =
   | "DateField"
   | "SelectField"
   | "CheckboxField"
+  | "ImageField"
   | "ImageUploadField"
+  | "BulletedListField"
   | "RatingScaleField"
   | "DualImageUpload"
   | "PictureSelectField";
@@ -69,7 +73,7 @@ type FormElementsType = {
   [key in ElementsType]: FormElement;
 };
 
-export const FormElements: FormElementsType = {
+export const FormElements = {
   TextField: TextFieldFormElement,
   TitleField: TitleFieldFormElement,
   SubTitleField: SubTitleFieldFormElement,
@@ -81,8 +85,10 @@ export const FormElements: FormElementsType = {
   DateField: DateFieldFormElement,
   SelectField: SelectFieldFormElement,
   CheckboxField: CheckboxFieldFormElement,
+  ImageField: ImageFormElement,
   ImageUploadField: ImageUploadFormElement,
-  RatingScaleField: RatingScaleFormElement,
   DualImageUpload: DualImageUploadFormElement,
+  RatingScaleField: RatingScaleFormElement,
   PictureSelectField: PictureSelectFormElement,
-};
+  BulletedListField: BulletedListFieldFormElement,
+} satisfies FormElementsType;

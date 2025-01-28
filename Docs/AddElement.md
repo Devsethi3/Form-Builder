@@ -6,6 +6,94 @@ This guide explains how to add a new form element type to the Quick Form Builder
 
 Form elements are the building blocks of forms in our system. Each element type (like text fields, checkboxes, etc.) is implemented as a separate component that follows a consistent pattern and interface.
 
+## Element Categories
+
+Elements are divided into two categories in the sidebar:
+
+1. **Layout Elements**: Static elements used for form structure and presentation (e.g., Title, SubTitle, Paragraph, Separator, Spacer, Image)
+2. **Form Elements**: Interactive input elements that collect data (e.g., TextField, NumberField, ImageUpload)
+
+When adding a new element, make sure to place it in the appropriate section in `FormElementsSidebar.tsx`.
+
+## TypeScript Best Practices
+
+### Image Handling
+When working with images in TypeScript, avoid using the global `Image` constructor as it can conflict with imported icon components. Instead:
+
+```typescript
+// ❌ Don't use this
+const img = new Image();
+
+// ✅ Use this instead
+const img = document.createElement('img') as HTMLImageElement;
+```
+
+### Form Element Type Definitions
+Always define proper types for your element's attributes:
+
+```typescript
+type CustomInstance = FormElementInstance & {
+  extraAttributes: {
+    // Define your element's specific attributes here
+    label: string;
+    required: boolean;
+    // ... other attributes
+  };
+};
+
+// Use zod for runtime validation
+const propertiesSchema = z.object({
+  label: z.string().min(2).max(50),
+  required: z.boolean().default(false),
+  // ... other validations
+});
+```
+
+### Property Updates
+Always use the `useDesigner` hook to update element properties. Direct mutations of `extraAttributes` will not trigger re-renders or persist changes:
+
+```typescript
+function PropertiesComponent({ elementInstance }: { elementInstance: FormElementInstance }) {
+  const element = elementInstance as CustomInstance;
+  const { updateElement } = useDesigner();
+  const form = useForm<propertiesFormSchemaType>({
+    resolver: zodResolver(propertiesSchema),
+    mode: "onBlur",
+    defaultValues: element.extraAttributes,
+  });
+
+  // ❌ Don't update properties directly
+  const wrongWay = () => {
+    element.extraAttributes.someProperty = newValue; // This won't work properly
+  };
+
+  // ✅ Use updateElement from useDesigner
+  const rightWay = (values: propertiesFormSchemaType) => {
+    updateElement(element.id, {
+      ...element,
+      extraAttributes: {
+        ...element.extraAttributes,
+        ...values,
+      },
+    });
+  };
+
+  return (
+    <Form {...form}>
+      <form
+        onBlur={form.handleSubmit(rightWay)}
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+        className="space-y-3"
+      >
+        {/* Form fields here */}
+      </form>
+    </Form>
+  );
+}
+```
+
 ## Step-by-Step Guide
 
 ### 1. Add Element Type Definition
@@ -127,7 +215,41 @@ function FormComponent({
 function PropertiesComponent({ elementInstance }: { elementInstance: FormElementInstance }) {
   const element = elementInstance as CustomInstance;
   const { updateElement } = useDesigner();
-  // Implementation for property editing
+  const form = useForm<propertiesFormSchemaType>({
+    resolver: zodResolver(propertiesSchema),
+    mode: "onBlur",
+    defaultValues: element.extraAttributes,
+  });
+
+  // ❌ Don't update properties directly
+  const wrongWay = () => {
+    element.extraAttributes.someProperty = newValue; // This won't work properly
+  };
+
+  // ✅ Use updateElement from useDesigner
+  const rightWay = (values: propertiesFormSchemaType) => {
+    updateElement(element.id, {
+      ...element,
+      extraAttributes: {
+        ...element.extraAttributes,
+        ...values,
+      },
+    });
+  };
+
+  return (
+    <Form {...form}>
+      <form
+        onBlur={form.handleSubmit(rightWay)}
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+        className="space-y-3"
+      >
+        {/* Form fields here */}
+      </form>
+    </Form>
+  );
 }
 ```
 
