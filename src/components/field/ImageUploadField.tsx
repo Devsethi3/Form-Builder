@@ -13,6 +13,7 @@ import useDesigner from "@/hooks/useDesigner";
 import NextImage from "next/image";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
+import clsx from "clsx";
 
 const type: ElementsType = "ImageUploadField";
 
@@ -80,87 +81,43 @@ function FormComponent({
   defaultValue?: string;
 }) {
   const element = elementInstance as CustomInstance;
-  const [fileName, setFileName] = useState("No file chosen");
-  const [previewUrl, setPreviewUrl] = useState<string | null>(defaultValue || null);
+  const { label, helperText, required, prompt, buttonText, width, height } = element.extraAttributes;
+
+  const [previewImage, setPreviewImage] = useState<string | null>(defaultValue || null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { prompt, buttonText, width, height, maxDimension } = element.extraAttributes;
 
-  const resizeImage = async (originalFile: File): Promise<File> => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.src = URL.createObjectURL(originalFile);
+  const handleFileSelect = (file: File) => {
+    if (!file) return;
 
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d')!;
-
-        // Calculate new dimensions while maintaining aspect ratio
-        let newWidth = img.width;
-        let newHeight = img.height;
-
-        if (newWidth > maxDimension || newHeight > maxDimension) {
-          if (newWidth > newHeight) {
-            newHeight = (newHeight / newWidth) * maxDimension;
-            newWidth = maxDimension;
-          } else {
-            newWidth = (newWidth / newHeight) * maxDimension;
-            newHeight = maxDimension;
-          }
-        }
-
-        canvas.width = newWidth;
-        canvas.height = newHeight;
-
-        ctx.drawImage(img, 0, 0, newWidth, newHeight);
-
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const resizedFile = new File([blob], originalFile.name, {
-              type: originalFile.type,
-              lastModified: Date.now(),
-            });
-            resolve(resizedFile);
-          }
-        }, originalFile.type);
-
-        URL.revokeObjectURL(img.src);
-      };
-    });
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64String = e.target?.result as string;
+      setPreviewImage(base64String);
+      if (submitValue) {
+        submitValue(elementInstance.id, base64String);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
-  const convertToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
-    });
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
   };
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      setFileName(file.name);
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
 
-      let finalFile = file;
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
 
-      const img = new Image();
-      img.src = URL.createObjectURL(file);
-
-      img.onload = async () => {
-        if (img.width > maxDimension || img.height > maxDimension) {
-          finalFile = await resizeImage(file);
-        }
-
-        URL.revokeObjectURL(img.src);
-        
-        // Convert the final image to base64 and set preview
-        const base64Data = await convertToBase64(finalFile);
-        setPreviewUrl(base64Data);
-        
-        // Submit the base64 data instead of just the filename
-        submitValue?.(elementInstance.id, base64Data);
-      };
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith("image/")) {
+      handleFileSelect(file);
     }
   };
 
@@ -170,52 +127,69 @@ function FormComponent({
 
   return (
     <div className="flex flex-col gap-2 w-full">
-      <Label className={`${isInvalid ? "text-red-500" : ""} text-center w-full pb-2`}>
-        {element.extraAttributes.label}
-        {element.extraAttributes.required && "*"}
+      <Label className={clsx(isInvalid && "text-red-500")}>
+        {label}
+        {required && "*"}
       </Label>
-      <div className={`${width} ${height} border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50 mx-auto`}>
-        {previewUrl ? (
-          <NextImage 
-            src={previewUrl}
-            alt="Preview"
-            width={400}
-            height={400}
-            className="max-w-full max-h-full object-contain"
-          />
-        ) : (
-          <div className="text-gray-400">
-            <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" 
-              />
-            </svg>
-            <p className="text-sm text-center">{prompt}</p>
+      <div
+        className={clsx(
+          "relative flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg transition-colors",
+          width,
+          height,
+          isDragging ? "border-primary bg-primary/10" : "border-gray-300",
+          isInvalid && "border-red-500"
+        )}
+        onDragEnter={handleDragEnter}
+        onDragOver={(e) => e.preventDefault()}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {previewImage ? (
+          <div className="relative w-full h-full">
+            <img
+              src={previewImage}
+              alt="Preview"
+              className="w-full h-full object-contain"
+            />
+            <Button
+              variant="outline"
+              className="absolute top-2 right-2"
+              onClick={() => setPreviewImage(null)}
+            >
+              Change
+            </Button>
           </div>
+        ) : (
+          <>
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleFileSelect(file);
+              }}
+            />
+            <div className="text-center">
+              <BsCardImage className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+              <p className="mb-2 text-sm text-gray-500">{prompt}</p>
+              <Button
+                type="button"
+                variant="outline"
+                className="mx-auto"
+                onClick={handleButtonClick}
+              >
+                {buttonText}
+              </Button>
+            </div>
+          </>
         )}
       </div>
-      <div className="flex justify-center items-center gap-2">
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleFileSelect}
-          className="hidden"
-          ref={fileInputRef}
-        />
-        <Button
-          onClick={handleButtonClick}
-          variant="outline"
-          className="px-4 py-2"
-        >
-          {buttonText}
-        </Button>
-        <span className="text-sm text-gray-500">{fileName}</span>
-      </div>
-      {element.extraAttributes.helperText && (
-        <p className="text-muted-foreground text-[0.8rem]">{element.extraAttributes.helperText}</p>
+      {helperText && (
+        <p className={clsx("text-muted-foreground text-[0.8rem]", isInvalid && "text-red-500")}>
+          {helperText}
+        </p>
       )}
     </div>
   );
