@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { ElementsType, FormElement, FormElementInstance } from "../FormElements";
 import { Label } from "../ui/label";
 import { z } from "zod";
@@ -269,55 +270,82 @@ function FormComponent({
     return gradientLabels[position].color;
   };
 
+  const labelColor = (index: number) => {
+    if (!useGradient || !gradientLabels) return solidColors.text;
+    const position = (index - minValue) / (maxValue - minValue);
+    if (position <= 0.33) {
+      return gradientLabels.start.color;
+    } else if (position <= 0.66) {
+      return gradientLabels.middle.color;
+    } else {
+      return gradientLabels.end.color;
+    }
+  };
+
+  const buttonClasses = (index: number) => {
+    if (!useGradient) return solidColors.hover;
+    const position = (index - minValue) / (maxValue - minValue);
+    if (position <= 0.33) {
+      return `hover:border-${gradientColorSchemes[gradientScheme].colors[0]}-400`;
+    } else if (position <= 0.66) {
+      return `hover:border-${gradientColorSchemes[gradientScheme].colors[1]}-400`;
+    } else {
+      return `hover:border-${gradientColorSchemes[gradientScheme].colors[2]}-400`;
+    }
+  };
+
+  const selectedClass = (index: number) => {
+    if (!useGradient) return solidColors.selected;
+    const position = (index - minValue) / (maxValue - minValue);
+    if (position <= 0.33) {
+      return `bg-${gradientColorSchemes[gradientScheme].colors[0]}-500 border-${gradientColorSchemes[gradientScheme].colors[0]}-600`;
+    } else if (position <= 0.66) {
+      return `bg-${gradientColorSchemes[gradientScheme].colors[1]}-500 border-${gradientColorSchemes[gradientScheme].colors[1]}-600`;
+    } else {
+      return `bg-${gradientColorSchemes[gradientScheme].colors[2]}-500 border-${gradientColorSchemes[gradientScheme].colors[2]}-600`;
+    }
+  };
+
   return (
-    <div className="w-full max-w-2xl mx-auto p-4">
-      <div className="text-center mb-6">
-        <h3 className={`text-lg font-medium ${getLabelColor('middle')}`}>{question}</h3>
+    <div className="flex flex-col gap-2 w-full">
+      <Label>
+        {elementInstance.extraAttributes.label}
+        {elementInstance.extraAttributes.required && <span className="text-red-500 ml-1">*</span>}
+      </Label>
+      <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
+        <div className="flex items-center justify-between w-full max-w-3xl mx-auto">
+          <span className={cn("text-sm whitespace-nowrap", labelColor(0))}>{elementInstance.extraAttributes.minLabel}</span>
+          <div className="flex-1 flex justify-center">
+            <span className={cn("text-sm whitespace-nowrap", labelColor(Math.floor(elementInstance.extraAttributes.maxValue / 2)))}>{elementInstance.extraAttributes.midLabel}</span>
+          </div>
+          <span className={cn("text-sm whitespace-nowrap", labelColor(elementInstance.extraAttributes.maxValue - 1))}>{elementInstance.extraAttributes.maxLabel}</span>
+        </div>
       </div>
-      
-      <div className="flex justify-between items-center mb-4">
-        {values.map((value) => {
-          const colors = getButtonColors(value);
-          return (
-            <div 
-              key={value} 
-              className="flex flex-col items-center"
-              onMouseEnter={() => setHoveredValue(value)}
-              onMouseLeave={() => setHoveredValue(null)}
-            >
-              <button
-                className={`w-8 h-8 rounded-full border-2 flex items-center justify-center
-                  transform transition-all duration-200 ease-in-out
-                  ${selectedValue === value 
-                    ? `${colors.selected} text-white scale-110` 
-                    : `bg-white ${colors.hover}`}
-                  ${hoveredValue === value ? 'scale-105' : ''}
-                  ${hoveredValue !== null && hoveredValue !== value ? 'opacity-50' : 'opacity-100'}
-                `}
-                onClick={() => handleSelection(value)}
-                aria-label={`Select ${value}`}
-              >
-                <span className="text-sm font-medium">{value}</span>
-              </button>
-            </div>
-          );
-        })}
+      <div className="flex flex-wrap justify-center gap-2 w-full max-w-3xl mx-auto">
+        {Array.from({ length: elementInstance.extraAttributes.maxValue }, (_, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => handleSelection(i + 1)}
+            className={cn(
+              "w-10 h-10 rounded-full border-2 transition-all",
+              "focus:outline-none focus:ring-2 focus:ring-offset-2",
+              buttonClasses(i),
+              {
+                [selectedClass(i)]: selectedValue === i + 1,
+                "opacity-50": selectedValue && selectedValue !== i + 1,
+              }
+            )}
+          >
+            {i + 1}
+          </button>
+        ))}
       </div>
-      
-      <div className="flex justify-between px-4 transition-opacity duration-300">
-        <span className={`text-sm ${getLabelColor('start')} transform transition-all duration-300
-          ${hoveredValue !== null && hoveredValue <= minValue + (maxValue - minValue) / 3 ? 'scale-110 font-medium' : ''}`}>
-          {minLabel}
-        </span>
-        <span className={`text-sm ${getLabelColor('middle')} transform transition-all duration-300
-          ${hoveredValue !== null && hoveredValue > minValue + (maxValue - minValue) / 3 && hoveredValue < maxValue - (maxValue - minValue) / 3 ? 'scale-110 font-medium' : ''}`}>
-          {midLabel}
-        </span>
-        <span className={`text-sm ${getLabelColor('end')} transform transition-all duration-300
-          ${hoveredValue !== null && hoveredValue >= maxValue - (maxValue - minValue) / 3 ? 'scale-110 font-medium' : ''}`}>
-          {maxLabel}
-        </span>
-      </div>
+      {elementInstance.extraAttributes.helperText && (
+        <p className={cn("text-muted-foreground text-sm", { "text-red-500": isInvalid })}>
+          {elementInstance.extraAttributes.helperText}
+        </p>
+      )}
     </div>
   );
 }
