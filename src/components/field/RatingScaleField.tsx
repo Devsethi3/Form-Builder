@@ -309,20 +309,20 @@ function FormComponent({
   return (
     <div className="flex flex-col gap-2 w-full">
       <Label>
-        {elementInstance.extraAttributes.label}
-        {elementInstance.extraAttributes.required && <span className="text-red-500 ml-1">*</span>}
+        {elementInstance.extraAttributes?.label}
+        {elementInstance.extraAttributes?.required && <span className="text-red-500 ml-1">*</span>}
       </Label>
       <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
         <div className="flex items-center justify-between w-full max-w-3xl mx-auto">
-          <span className={cn("text-sm whitespace-nowrap", labelColor(0))}>{elementInstance.extraAttributes.minLabel}</span>
+          <span className={cn("text-sm whitespace-nowrap", labelColor(0))}>{elementInstance.extraAttributes?.minLabel}</span>
           <div className="flex-1 flex justify-center">
-            <span className={cn("text-sm whitespace-nowrap", labelColor(Math.floor(elementInstance.extraAttributes.maxValue / 2)))}>{elementInstance.extraAttributes.midLabel}</span>
+            <span className={cn("text-sm whitespace-nowrap", labelColor(Math.floor((elementInstance.extraAttributes?.maxValue ?? 0) / 2)))}>{elementInstance.extraAttributes?.midLabel}</span>
           </div>
-          <span className={cn("text-sm whitespace-nowrap", labelColor(elementInstance.extraAttributes.maxValue - 1))}>{elementInstance.extraAttributes.maxLabel}</span>
+          <span className={cn("text-sm whitespace-nowrap", labelColor((elementInstance.extraAttributes?.maxValue ?? 0) - 1))}>{elementInstance.extraAttributes?.maxLabel}</span>
         </div>
       </div>
       <div className="flex flex-wrap justify-center gap-2 w-full max-w-3xl mx-auto">
-        {Array.from({ length: elementInstance.extraAttributes.maxValue }, (_, i) => (
+        {Array.from({ length: elementInstance.extraAttributes?.maxValue ?? 0 }, (_, i) => (
           <button
             key={i}
             type="button"
@@ -341,7 +341,7 @@ function FormComponent({
           </button>
         ))}
       </div>
-      {elementInstance.extraAttributes.helperText && (
+      {elementInstance.extraAttributes?.helperText && (
         <p className={cn("text-muted-foreground text-sm", { "text-red-500": isInvalid })}>
           {elementInstance.extraAttributes.helperText}
         </p>
