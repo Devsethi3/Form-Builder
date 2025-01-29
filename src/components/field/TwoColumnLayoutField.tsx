@@ -5,7 +5,7 @@ import { Label } from "../ui/label";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, memo, useState } from "react";
+import { useEffect, memo, useState, useCallback } from "react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { LuColumns } from "react-icons/lu";
 import useDesigner from "@/hooks/useDesigner";
@@ -14,6 +14,7 @@ import { formThemes } from "@/schemas/form";
 import { useDroppable } from "@dnd-kit/core";
 import { idGenerator } from "@/lib/idGenerator";
 import { DesignerElementWrapper } from "../Designer";
+import { Suspense } from "react";
 
 const type: ElementsType = "TwoColumnLayoutField";
 
@@ -178,28 +179,55 @@ function FormComponent({ elementInstance }: { elementInstance: FormElementInstan
   const { gap, leftColumn, rightColumn } = element.extraAttributes;
   const { theme } = useDesigner();
   const { styles } = formThemes[theme];
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Quick check to ensure form elements exist
+    const validateElements = () => {
+      try {
+        [...leftColumn, ...rightColumn].forEach((element) => {
+          if (!FormElements[element.type]) {
+            throw new Error(`Form element type ${element.type} not found`);
+          }
+        });
+        return true;
+      } catch (error) {
+        console.error('Error validating form elements:', error);
+        return false;
+      }
+    };
+
+    validateElements();
+    setIsLoading(false);
+  }, [leftColumn, rightColumn]);
+
+  const renderColumn = useCallback((elements: FormElementInstance[]) => {
+    return elements.map((element) => (
+      <div key={element.id} className="mb-4 w-full">
+        <div role="alert">
+          <Suspense fallback={<div>Loading...</div>}>
+            <MemoizedFormComponent element={element} />
+          </Suspense>
+        </div>
+      </div>
+    ));
+  }, []);
+
+  if (isLoading) {
+    return <div>Loading form elements...</div>;
+  }
 
   return (
     <div className={cn("grid grid-cols-2 w-full", `gap-${gap}`)}>
       <div className="w-full">
-        {leftColumn.map((element) => (
-          <div key={element.id} className="mb-4 w-full">
-            <MemoizedFormComponent element={element} />
-          </div>
-        ))}
+        {renderColumn(leftColumn)}
       </div>
       <div className="w-full">
-        {rightColumn.map((element) => (
-          <div key={element.id} className="mb-4 w-full">
-            <MemoizedFormComponent element={element} />
-          </div>
-        ))}
+        {renderColumn(rightColumn)}
       </div>
     </div>
   );
 }
-
-type propertiesFormSchemaType = z.infer<typeof propertiesSchema>;
 
 function PropertiesComponent({ elementInstance }: { elementInstance: FormElementInstance }) {
   const element = elementInstance as CustomInstance;
@@ -262,3 +290,5 @@ function PropertiesComponent({ elementInstance }: { elementInstance: FormElement
     </Form>
   );
 }
+
+type propertiesFormSchemaType = z.infer<typeof propertiesSchema>;

@@ -20,6 +20,7 @@ import Confetti from "react-confetti";
 import useDesigner from "@/hooks/useDesigner";
 import { PiDotsThreeOutlineVerticalFill } from "react-icons/pi";
 import { formThemes } from "@/schemas/form";
+import { ElementsType, FormElement, FormElementInstance, FormElements } from "./FormElements";
 
 function FormBuilder({ form }: { form: Form }) {
   const { setElements, setSelectedElement, setTheme } = useDesigner();
@@ -63,8 +64,50 @@ function FormBuilder({ form }: { form: Form }) {
 
   useEffect(() => {
     if (isReady) return;
-    const elements = JSON.parse(form.content);
-    setElements(elements);
+    const elements = JSON.parse(form.content) as FormElementInstance[];
+    
+    // Reconstruct form elements properly
+    const reconstructedElements = elements.map((element: FormElementInstance) => {
+      const elementType = element.type as ElementsType;
+      // For TwoColumnLayoutField, we need to reconstruct the column elements
+      if (elementType === 'TwoColumnLayoutField') {
+        const reconstructedElement = FormElements[elementType].construct(element.id);
+        const typedElement = element as FormElementInstance & {
+          extraAttributes: {
+            leftColumn: FormElementInstance[];
+            rightColumn: FormElementInstance[];
+            gap: string;
+          }
+        };
+        
+        reconstructedElement.extraAttributes = {
+          ...element.extraAttributes,
+          gap: typedElement.extraAttributes.gap || "4",
+          leftColumn: typedElement.extraAttributes.leftColumn.map((colElement: FormElementInstance) => {
+            const colType = colElement.type as ElementsType;
+            return {
+              ...FormElements[colType].construct(colElement.id),
+              extraAttributes: colElement.extraAttributes
+            };
+          }),
+          rightColumn: typedElement.extraAttributes.rightColumn.map((colElement: FormElementInstance) => {
+            const colType = colElement.type as ElementsType;
+            return {
+              ...FormElements[colType].construct(colElement.id),
+              extraAttributes: colElement.extraAttributes
+            };
+          })
+        };
+        return reconstructedElement;
+      }
+      // For other elements, just reconstruct normally
+      return {
+        ...FormElements[elementType].construct(element.id),
+        extraAttributes: element.extraAttributes
+      };
+    });
+
+    setElements(reconstructedElements);
     setSelectedElement(null);
     const theme = form.theme as keyof typeof formThemes || "default";
     setTheme(theme);
