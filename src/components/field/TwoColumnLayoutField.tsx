@@ -5,7 +5,7 @@ import { Label } from "../ui/label";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, memo } from "react";
+import { useEffect, memo, useState } from "react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { LuColumns } from "react-icons/lu";
 import useDesigner from "@/hooks/useDesigner";
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { formThemes } from "@/schemas/form";
 import { useDroppable } from "@dnd-kit/core";
 import { idGenerator } from "@/lib/idGenerator";
+import { DesignerElementWrapper } from "../Designer";
 
 const type: ElementsType = "TwoColumnLayoutField";
 
@@ -30,13 +31,25 @@ const propertiesSchema = z.object({
 
 // Create a memoized wrapper for form components
 const MemoizedFormComponent = memo(
-  ({ element }: { element: FormElementInstance }) => {
-    return FormElements[element.type].formComponent({
-      elementInstance: element,
-    });
+  ({ element, inDesigner = false }: { element: FormElementInstance; inDesigner?: boolean }) => {
+    const { setSelectedElement } = useDesigner();
+    
+    return (
+      <div 
+        onClick={(e) => {
+          if (inDesigner) {
+            e.stopPropagation();
+            setSelectedElement(element);
+          }
+        }}
+      >
+        {FormElements[element.type].formComponent({
+          elementInstance: element,
+        })}
+      </div>
+    );
   },
   (prevProps, nextProps) => {
-    // Custom comparison function to ensure proper updates
     return prevProps.element.id === nextProps.element.id &&
            JSON.stringify(prevProps.element.extraAttributes) === JSON.stringify(nextProps.element.extraAttributes);
   }
@@ -72,8 +85,9 @@ type CustomInstance = FormElementInstance & {
 function DesignerComponent({ elementInstance }: { elementInstance: FormElementInstance }) {
   const element = elementInstance as CustomInstance;
   const { gap, leftColumn, rightColumn } = element.extraAttributes;
-  const { theme, addElement } = useDesigner();
+  const { theme, addElement, selectedElement } = useDesigner();
   const { styles } = formThemes[theme];
+  const [mouseIsOver, setMouseIsOver] = useState<boolean>(false);
 
   const droppableLeft = useDroppable({
     id: `${element.id}-left`,
@@ -94,9 +108,17 @@ function DesignerComponent({ elementInstance }: { elementInstance: FormElementIn
   });
   
   return (
-    <div className="flex flex-col gap-2 w-full">
+    <div 
+      className="flex flex-col gap-2 w-full relative" 
+      onMouseEnter={() => setMouseIsOver(true)}
+      onMouseLeave={() => setMouseIsOver(false)}
+    >
       <Label className="text-muted-foreground">Two Column Layout</Label>
-      <div className={cn("grid grid-cols-2 w-full", `gap-${gap}`)}>
+      <div className={cn(
+        "grid grid-cols-2 w-full",
+        `gap-${gap}`,
+        mouseIsOver && selectedElement?.id !== element.id && "opacity-30",
+      )}>
         <div
           ref={droppableLeft.setNodeRef}
           className={cn(
@@ -105,8 +127,12 @@ function DesignerComponent({ elementInstance }: { elementInstance: FormElementIn
           )}
         >
           {leftColumn.map((element) => (
-            <div key={element.id} className="mb-4 w-full">
-              <MemoizedFormComponent element={element} />
+            <div 
+              key={element.id} 
+              className="mb-4 w-full relative z-10"
+              style={{ pointerEvents: 'auto' }}
+            >
+              <DesignerElementWrapper element={element} />
             </div>
           ))}
           {!leftColumn.length && (
@@ -123,8 +149,12 @@ function DesignerComponent({ elementInstance }: { elementInstance: FormElementIn
           )}
         >
           {rightColumn.map((element) => (
-            <div key={element.id} className="mb-4 w-full">
-              <MemoizedFormComponent element={element} />
+            <div 
+              key={element.id} 
+              className="mb-4 w-full relative z-10"
+              style={{ pointerEvents: 'auto' }}
+            >
+              <DesignerElementWrapper element={element} />
             </div>
           ))}
           {!rightColumn.length && (
@@ -134,6 +164,11 @@ function DesignerComponent({ elementInstance }: { elementInstance: FormElementIn
           )}
         </div>
       </div>
+      {mouseIsOver && selectedElement?.id !== element.id && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse pointer-events-none">
+          <p className="text-muted-foreground text-sm">Click for properties or drag to move</p>
+        </div>
+      )}
     </div>
   );
 }

@@ -191,7 +191,7 @@ function Designer() {
     );
 }
 
-function DesignerElementWrapper({ element }: { element: FormElementInstance }) {
+export function DesignerElementWrapper({ element }: { element: FormElementInstance }) {
     const { removeElement, selectedElement, setSelectedElement, updateElement } = useDesigner();
 
     const [mouseIsOver, setMouseIsOver] = useState<boolean>(false);

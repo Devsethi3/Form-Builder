@@ -24,7 +24,7 @@ const extraAttributes = {
 };
 
 const propertiesSchema = z.object({
-  subTitle: z.string().min(2).max(50),
+  subTitle: z.string().min(2).max(150),
   fontSize: z.enum(fontSizeSchema),
   alignment: z.enum(alignmentSchema),
 });
