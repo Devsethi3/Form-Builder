@@ -115,25 +115,42 @@ async function SubmissionsTable({ id }: { id: number }) {
         type: ElementsType;
     }[] = [];
 
-    formElements.forEach((element) => {
-        switch (element.type) {
-            case "TextField":
-            case "NumberField":
-            case "TextAreaField":
-            case "DateField":
-            case "SelectField":
-            case "CheckboxField":
-                columns.push({
-                    id: element.id,
-                    label: element.extraAttributes?.label,
-                    required: element.extraAttributes?.required,
-                    type: element.type,
-                });
-                break;
-            default:
-                break;
-        }
-    });
+    function parseFormElements(elements: FormElementInstance[]) {
+        elements.forEach((element) => {
+            switch (element.type) {
+                case "TextField":
+                case "NumberField":
+                case "TextAreaField":
+                case "DateField":
+                case "SelectField":
+                case "CheckboxField":
+                case "ImageUploadField":
+                case "DualImageUpload":
+                case "PictureSelectField":
+                case "RatingScaleField":
+                    columns.push({
+                        id: element.id,
+                        label: element.extraAttributes?.label,
+                        required: element.extraAttributes?.required,
+                        type: element.type,
+                    });
+                    break;
+                case "TwoColumnLayoutField":
+                    // Parse elements in both columns
+                    const { leftColumn, rightColumn } = element.extraAttributes as {
+                        leftColumn: FormElementInstance[];
+                        rightColumn: FormElementInstance[];
+                    };
+                    parseFormElements(leftColumn);
+                    parseFormElements(rightColumn);
+                    break;
+                default:
+                    break;
+            }
+        });
+    }
+
+    parseFormElements(formElements);
 
     const rows: Row[] = [];
     form.FormSubmissions.forEach((submission) => {

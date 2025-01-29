@@ -524,7 +524,7 @@ export async function GET(
               wrapper.appendChild(ratingInput);
               break;
 
-            case 'DualImageUploadField':
+            case 'DualImageUpload':
               const dualImageLabel = document.createElement('label');
               dualImageLabel.className = 'quick-form-label';
               dualImageLabel.textContent = element.extraAttributes?.label || '';
@@ -632,6 +632,21 @@ export async function GET(
               wrapper.appendChild(dualImageHelperText);
               wrapper.appendChild(dualImageContainer);
               break;
+
+            default:
+              if (element.type === 'DualImageUploadField') {
+                console.error('Unsupported field type:', element.type);
+                return;
+              }
+
+              if (element.type === 'DualImageUpload') {
+                console.error('Unsupported field type:', element.type);
+                return;
+              }
+
+              if (value) {
+                data[fieldName] = value;
+              }
           }
 
           form.appendChild(wrapper);
@@ -705,7 +720,7 @@ export async function GET(
                   data[fieldName] = !!value;
                   break;
 
-                case 'DualImageUploadField':
+                case 'DualImageUpload':
                   if (value) {
                     const leftFile = formData.get(\`\${fieldName}_left\`);
                     const rightFile = formData.get(\`\${fieldName}_right\`);
