@@ -67,9 +67,11 @@ function Designer() {
                     
                     // Also remove from other columns if it exists there
                     const otherColumn = columnId === 'left' ? 'rightColumn' : 'leftColumn';
-                    parent.extraAttributes[otherColumn] = parent.extraAttributes[otherColumn].filter(
-                        (el: FormElementInstance) => el.id !== activeId
-                    );
+                    if (parent.type === 'TwoColumnLayoutField' && parent.extraAttributes?.[otherColumn]) {
+                        parent.extraAttributes[otherColumn] = (parent.extraAttributes[otherColumn] as FormElementInstance[]).filter(
+                            (el: FormElementInstance) => el.id !== activeId
+                        );
+                    }
                 } else {
                     // Creating a new element from sidebar
                     elementToAdd = FormElements[type as ElementsType].construct(idGenerator());
@@ -77,11 +79,13 @@ function Designer() {
                 
                 // Add to the appropriate column
                 const column = columnId === 'left' ? 'leftColumn' : 'rightColumn';
-                parent.extraAttributes[column] = [...parent.extraAttributes[column], elementToAdd];
-                
-                // Update the parent element
-                elements[parentIndex] = parent;
-                updateElement(parentId, parent);
+                if (parent.type === 'TwoColumnLayoutField' && parent.extraAttributes) {
+                    parent.extraAttributes[column] = [...(parent.extraAttributes[column] as FormElementInstance[] || []), elementToAdd];
+                    
+                    // Update the parent element
+                    elements[parentIndex] = parent;
+                    updateElement(parent.id, parent);
+                }
                 return;
             }
 

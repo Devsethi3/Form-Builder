@@ -42,6 +42,8 @@ const MemoizedFormComponent = memo(
   }
 );
 
+MemoizedFormComponent.displayName = "MemoizedFormComponent";
+
 export const TwoColumnLayoutFieldFormElement: FormElement = {
   type,
   construct: (id: string) => ({
