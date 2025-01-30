@@ -12,7 +12,7 @@ import { TextFieldFormElement } from "./field/TextField";
 import { TitleFieldFormElement } from "./field/TitleField";
 import { DualImageUploadFormElement } from "./field/DualImageUpload";
 import { ImageUploadFieldFormElement } from "./field/ImageUploadField";
-import { RatingScaleFormElement } from "./field/RatingScaleField";
+import { RatingScaleFormElement } from "./field/RatingScale";
 import { ImageFormElement } from "./field/ImageElement";
 import { BulletedListFieldFormElement } from "./field/BulletedListField";
 import { TwoColumnLayoutFieldFormElement } from "./field/TwoColumnLayoutField";
