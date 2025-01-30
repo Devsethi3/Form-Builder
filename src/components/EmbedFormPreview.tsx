@@ -8,6 +8,7 @@ interface EmbedFormPreviewProps {
 export default function EmbedFormPreview({ formId, previewMode = false }: EmbedFormPreviewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const messageHandlerRef = useRef<((event: MessageEvent) => void) | null>(null);
 
   useEffect(() => {
     const iframe = iframeRef.current;
@@ -18,21 +19,32 @@ export default function EmbedFormPreview({ formId, previewMode = false }: EmbedF
       <html>
         <body>
           <div id="quick-form-${formId}"></div>
-          <script src="/api/embed/${formId}/js" async defer onload="window.parent.postMessage('loaded', '*')"></script>
+          <script>
+            window.addEventListener('load', function() {
+              window.parent.postMessage('loaded', '*');
+            });
+          </script>
+          <script src="/api/embed/${formId}/js" async defer></script>
         </body>
       </html>
     `;
 
-    // Listen for load message from iframe
-    const handleMessage = (event: MessageEvent) => {
+    // Create and store message handler
+    messageHandlerRef.current = (event: MessageEvent) => {
       if (event.data === 'loaded') {
         setIsLoading(false);
       }
     };
 
-    window.addEventListener('message', handleMessage);
+    // Add message listener
+    window.addEventListener('message', messageHandlerRef.current);
+
+    // Cleanup function
     return () => {
-      window.removeEventListener('message', handleMessage);
+      if (messageHandlerRef.current) {
+        window.removeEventListener('message', messageHandlerRef.current);
+        messageHandlerRef.current = null;
+      }
     };
   }, [formId]);
 
