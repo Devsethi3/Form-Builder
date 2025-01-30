@@ -1,6 +1,5 @@
 "use client";
 import { StatsCard } from "@/components/ui/stats-card";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ReactNode, Suspense, useEffect, useState } from "react";
 import { LuView } from "react-icons/lu";
@@ -12,15 +11,17 @@ import CreateFormBtn from "@/components/CreateFormBtn";
 import { GetFormStats, GetForms } from "@/action/form";
 import FormCard from "@/components/FormCard";
 import { Form } from "@prisma/client";
+import { toast } from "@/components/ui/use-toast";
 
 export default function Home() {
   const [stats, setStats] = useState<Awaited<ReturnType<typeof GetFormStats>> | null>(null);
-  const [forms, setForms] = useState<Form[]>([]);
+  const [forms, setForms] = useState<Form[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
+        setLoading(true);
         const [statsData, formsData] = await Promise.all([
           GetFormStats(),
           GetForms(),
@@ -29,6 +30,12 @@ export default function Home() {
         setForms(formsData);
       } catch (error) {
         console.error("Error loading dashboard data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load dashboard data. Please try again.",
+          variant: "destructive",
+        });
+        setForms([]);
       } finally {
         setLoading(false);
       }
@@ -38,14 +45,23 @@ export default function Home() {
   }, []);
 
   const handleFormDeleted = (formId: number) => {
-    setForms((prevForms) => prevForms.filter((form) => form.id !== formId));
+    if (!forms) return;
+    
+    setForms((prevForms) => {
+      if (!prevForms) return [];
+      return prevForms.filter((form) => form.id !== formId);
+    });
+    
     // Update stats
     setStats((prevStats) => {
-      if (!prevStats) return null;
+      if (!prevStats || !forms) return null;
+      const deletedForm = forms.find(f => f.id === formId);
+      if (!deletedForm) return prevStats;
+      
       return {
         ...prevStats,
-        visits: prevStats.visits - (forms.find(f => f.id === formId)?.visits || 0),
-        submissions: prevStats.submissions - (forms.find(f => f.id === formId)?.submissions || 0),
+        visits: prevStats.visits - (deletedForm.visits || 0),
+        submissions: prevStats.submissions - (deletedForm.submissions || 0),
       };
     });
   };
@@ -100,6 +116,14 @@ export default function Home() {
           [1, 2, 3, 4].map((el) => (
             <FormCardSkeleton key={el} />
           ))
+        ) : forms === null ? (
+          <div className="col-span-3 text-center">
+            <p>Error loading forms. Please try refreshing the page.</p>
+          </div>
+        ) : forms.length === 0 ? (
+          <div className="col-span-3 text-center">
+            <p>No forms created yet. Create your first form to get started!</p>
+          </div>
         ) : (
           forms.map((form) => (
             <FormCard key={form.id} form={form} onDelete={handleFormDeleted} />

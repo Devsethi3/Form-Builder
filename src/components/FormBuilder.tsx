@@ -66,6 +66,9 @@ function FormBuilder({ form }: { form: Form }) {
     if (isReady) return;
     const elements = JSON.parse(form.content) as FormElementInstance[];
     
+    // Initialize theme from form
+    setTheme((form.theme || "default") as keyof typeof formThemes);
+    
     // Reconstruct form elements properly
     const reconstructedElements = elements.map((element: FormElementInstance) => {
       const elementType = element.type as ElementsType;
@@ -109,8 +112,6 @@ function FormBuilder({ form }: { form: Form }) {
 
     setElements(reconstructedElements);
     setSelectedElement(null);
-    const theme = form.theme as keyof typeof formThemes || "default";
-    setTheme(theme);
     const readyTimeout = setTimeout(() => setIsReady(true), 500);
     return () => clearTimeout(readyTimeout);
   }, [form, setElements, isReady, setSelectedElement, setTheme]);

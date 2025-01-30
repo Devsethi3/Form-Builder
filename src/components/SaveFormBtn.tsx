@@ -5,15 +5,19 @@ import useDesigner from "@/hooks/useDesigner";
 import { toast } from "./ui/use-toast";
 import { FaSpinner } from "react-icons/fa";
 import { UpdateFormContent } from "@/action/form";
+import { useRouter } from "next/navigation";
 
 function SaveFormBtn({ id }: { id: number }) {
   const { elements, theme } = useDesigner();
   const [loading, startTransition] = useTransition();
+  const router = useRouter();
 
   const updateFormContent = async () => {
     try {
       const jsonElements = JSON.stringify(elements);
       await UpdateFormContent(id, jsonElements, theme);
+      // Force a revalidation of the data
+      router.refresh();
       toast({
         title: "Success",
         description: "Your form has been saved",

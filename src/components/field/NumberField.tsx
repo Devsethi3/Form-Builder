@@ -79,7 +79,7 @@ function DesignerComponent({ elementInstance }: { elementInstance: FormElementIn
         placeholder={placeHolder}
         className={cn(styles.text, styles.input, styles.border)}
       />
-      {helperText && <p className={cn("text-[0.8rem]", styles.muted)}>{helperText}</p>}
+      {helperText && <p className={cn("text-[0.8rem]", styles.muted.split(" ").find(c => c.startsWith("text-")))}>{helperText}</p>}
     </div>
   );
 }
@@ -134,7 +134,7 @@ function FormComponent({
       {helperText && (
         <p className={cn(
           "text-[0.8rem]",
-          error ? "text-red-500" : styles.muted
+          error ? "text-red-500" : styles.muted.split(" ").find(c => c.startsWith("text-"))
         )}>
           {helperText}
         </p>

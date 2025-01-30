@@ -101,96 +101,75 @@ function FormComponent({
     reader.readAsDataURL(file);
   };
 
-  const handleDragEnter = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
   };
 
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
+  const handleDragLeave = () => {
     setIsDragging(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-
     const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith("image/")) {
+    if (file && file.type.startsWith('image/')) {
       handleFileSelect(file);
     }
   };
 
-  const handleButtonClick = () => {
-    fileInputRef.current?.click();
-  };
-
   return (
     <div className="flex flex-col gap-2 w-full">
-      <Label className={clsx(isInvalid && "text-red-500")}>
+      <Label>
         {label}
         {required && "*"}
       </Label>
-      <div
+      <div 
         className={clsx(
-          "relative flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg transition-colors",
-          width,
-          height,
-          isDragging ? "border-primary bg-primary/10" : "border-gray-300",
+          `${width} ${height} border-2 border-dashed border-gray-300 rounded-lg relative mx-auto overflow-hidden`,
+          isDragging && "border-primary",
           isInvalid && "border-red-500"
         )}
-        onDragEnter={handleDragEnter}
-        onDragOver={(e) => e.preventDefault()}
+        onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
       >
         {previewImage ? (
-          <div className="relative w-full h-full">
-            <img
+          <div className="relative w-full h-full group">
+            <NextImage
               src={previewImage}
               alt="Preview"
-              className="w-full h-full object-contain"
+              fill
+              className="object-contain"
             />
-            <Button
-              variant="outline"
-              className="absolute top-2 right-2"
-              onClick={() => setPreviewImage(null)}
-            >
-              Change
-            </Button>
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+              <div className="p-2 rounded-full bg-black/30 hover:bg-black/50 cursor-pointer">
+                <BsCardImage className="w-6 h-6 text-white" />
+              </div>
+            </div>
           </div>
         ) : (
-          <>
-            <input
-              type="file"
-              ref={fileInputRef}
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleFileSelect(file);
-              }}
-            />
-            <div className="text-center">
-              <BsCardImage className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-              <p className="mb-2 text-sm text-gray-500">{prompt}</p>
-              <Button
-                type="button"
-                variant="outline"
-                className="mx-auto"
-                onClick={handleButtonClick}
-              >
-                {buttonText}
-              </Button>
+          <div className="h-full w-full flex items-center justify-center">
+            <div className="text-gray-400 text-center">
+              <BsCardImage className="w-12 h-12 mx-auto mb-2" />
+              <p>{prompt}</p>
             </div>
-          </>
+          </div>
         )}
       </div>
-      {helperText && (
-        <p className={clsx("text-muted-foreground text-[0.8rem]", isInvalid && "text-red-500")}>
-          {helperText}
-        </p>
-      )}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFileSelect(file);
+        }}
+      />
+      {helperText && <p className="text-muted-foreground text-[0.8rem]">{helperText}</p>}
     </div>
   );
 }
