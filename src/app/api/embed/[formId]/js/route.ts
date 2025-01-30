@@ -51,6 +51,7 @@ export async function GET(
       (() => {
         // Find or create container
         const containerId = 'quick-form-${formId}';
+        const formId = ${formId}; // Make formId available in the closure
         let container = document.getElementById(containerId);
         if (!container) {
           console.error('Quick Form container not found:', containerId);
@@ -163,38 +164,37 @@ export async function GET(
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
           }
           
-          .quick-form-picture-select { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
-            gap: 12px; 
+          .quick-form-picture-select {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
             margin-top: 8px;
           }
-          .quick-form-picture-option { 
-            cursor: pointer; 
-            border: 2px solid transparent; 
-            padding: 4px; 
+          .quick-form-picture-option {
+            border: 2px solid #D1D5DB;
             border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
             transition: all 0.2s ease;
-            background: white;
+            position: relative;
           }
           .quick-form-picture-option:hover {
+            border-color: #6366F1;
             transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
           }
-          .quick-form-picture-option.selected { 
+          .quick-form-picture-option.selected {
             border-color: #6366F1;
             background: #F3F4F6;
           }
-          .quick-form-picture-option img { 
-            width: 100%; 
-            height: 150px; 
-            object-fit: cover; 
-            border-radius: 6px;
+          .quick-form-picture-option img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
           }
           .quick-form-picture-option .label {
-            margin-top: 4px;
+            padding: 8px;
             text-align: center;
-            font-size: 14px;
+            font-weight: 500;
             color: #4B5563;
           }
           
@@ -279,6 +279,18 @@ export async function GET(
             color: #4B5563;
             font-size: 14px;
           }
+          
+          .quick-form-two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 16px;
+          }
+          .quick-form-column {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+          }
         \`;
         document.head.appendChild(style);
 
@@ -326,6 +338,27 @@ export async function GET(
               wrapper.appendChild(textLabel);
               wrapper.appendChild(textInput);
               wrapper.appendChild(textHelperText);
+              break;
+
+            case 'NumberField':
+              const numberLabel = document.createElement('label');
+              numberLabel.className = 'quick-form-label';
+              numberLabel.textContent = element.extraAttributes?.label || '';
+              
+              const numberHelperText = document.createElement('div');
+              numberHelperText.className = 'quick-form-helper-text';
+              numberHelperText.textContent = element.extraAttributes?.helperText || '';
+              
+              const numberInput = document.createElement('input');
+              numberInput.type = 'number';
+              numberInput.name = element.id;
+              numberInput.className = 'quick-form-input';
+              numberInput.placeholder = element.extraAttributes?.placeHolder || '0';
+              numberInput.required = element.extraAttributes?.required || false;
+              
+              wrapper.appendChild(numberLabel);
+              wrapper.appendChild(numberInput);
+              wrapper.appendChild(numberHelperText);
               break;
 
             case 'CheckboxField':
@@ -427,23 +460,22 @@ export async function GET(
                 option.className = 'quick-form-picture-option';
                 
                 const imgEl = document.createElement('img');
-                imgEl.src = img.url;
+                // Convert relative URLs to absolute URLs
+                imgEl.src = img.src.startsWith('/') ? window.location.origin + img.src : img.src;
                 imgEl.alt = img.label || '';
                 
-                option.appendChild(imgEl);
+                const label = document.createElement('div');
+                label.className = 'label';
+                label.textContent = img.label || '';
                 
-                if (img.label) {
-                  const label = document.createElement('div');
-                  label.className = 'label';
-                  label.textContent = img.label;
-                  option.appendChild(label);
-                }
+                option.appendChild(imgEl);
+                option.appendChild(label);
                 
                 option.addEventListener('click', () => {
                   document.querySelectorAll('.quick-form-picture-option').forEach(el => 
                     el.classList.remove('selected'));
                   option.classList.add('selected');
-                  hiddenInput.value = img.url;
+                  hiddenInput.value = img.src;
                 });
                 
                 pictureGrid.appendChild(option);
@@ -522,6 +554,155 @@ export async function GET(
               wrapper.appendChild(ratingQuestion);
               wrapper.appendChild(ratingScale);
               wrapper.appendChild(ratingInput);
+              break;
+
+            case 'ImageElement':
+              const imageContainer = document.createElement('div');
+              imageContainer.className = 'quick-form-field';
+              imageContainer.style.textAlign = element.extraAttributes?.alignment || 'center';
+              imageContainer.style.marginTop = \`\${element.extraAttributes?.marginTop || 0}px\`;
+              imageContainer.style.marginBottom = \`\${element.extraAttributes?.marginBottom || 0}px\`;
+              imageContainer.style.marginLeft = \`\${element.extraAttributes?.marginLeft || 0}px\`;
+              imageContainer.style.marginRight = \`\${element.extraAttributes?.marginRight || 0}px\`;
+
+              const image = document.createElement('img');
+              image.src = element.extraAttributes?.base64Image || '';
+              image.style.height = \`\${element.extraAttributes?.height || 200}px\`;
+              image.style.width = \`\${element.extraAttributes?.width || 200}px\`;
+              image.style.objectFit = element.extraAttributes?.maintainAspectRatio ? 'contain' : 'fill';
+              image.style.display = 'inline-block';
+
+              imageContainer.appendChild(image);
+              wrapper.appendChild(imageContainer);
+              break;
+
+            case 'TwoColumnLayoutField':
+              const columnContainer = document.createElement('div');
+              columnContainer.className = 'quick-form-two-column';
+              columnContainer.style.display = 'grid';
+              columnContainer.style.gridTemplateColumns = '1fr 1fr';
+              columnContainer.style.gap = \`\${element.extraAttributes?.gap || 4}px\`;
+              columnContainer.style.width = '100%';
+
+              // Create left column
+              const leftColumn = document.createElement('div');
+              leftColumn.className = 'quick-form-column';
+              element.extraAttributes?.leftColumn?.forEach(columnElement => {
+                const columnWrapper = document.createElement('div');
+                columnWrapper.className = 'quick-form-field';
+                
+                switch (columnElement.type) {
+                  case 'TextField':
+                    const textLabel = document.createElement('label');
+                    textLabel.className = 'quick-form-label';
+                    textLabel.textContent = columnElement.extraAttributes?.label || '';
+                    
+                    const textHelperText = document.createElement('div');
+                    textHelperText.className = 'quick-form-helper-text';
+                    textHelperText.textContent = columnElement.extraAttributes?.helperText || '';
+                    
+                    const textInput = document.createElement('input');
+                    textInput.type = 'text';
+                    textInput.name = columnElement.id;
+                    textInput.className = 'quick-form-input';
+                    textInput.placeholder = columnElement.extraAttributes?.placeHolder || '';
+                    textInput.required = columnElement.extraAttributes?.required || false;
+                    
+                    columnWrapper.appendChild(textLabel);
+                    columnWrapper.appendChild(textInput);
+                    columnWrapper.appendChild(textHelperText);
+                    break;
+
+                  case 'NumberField':
+                    const numberLabel = document.createElement('label');
+                    numberLabel.className = 'quick-form-label';
+                    numberLabel.textContent = columnElement.extraAttributes?.label || '';
+                    
+                    const numberHelperText = document.createElement('div');
+                    numberHelperText.className = 'quick-form-helper-text';
+                    numberHelperText.textContent = columnElement.extraAttributes?.helperText || '';
+                    
+                    const numberInput = document.createElement('input');
+                    numberInput.type = 'number';
+                    numberInput.name = columnElement.id;
+                    numberInput.className = 'quick-form-input';
+                    numberInput.placeholder = columnElement.extraAttributes?.placeHolder || '0';
+                    numberInput.required = columnElement.extraAttributes?.required || false;
+                    
+                    columnWrapper.appendChild(numberLabel);
+                    columnWrapper.appendChild(numberInput);
+                    columnWrapper.appendChild(numberHelperText);
+                    break;
+
+                  // Add other field type cases as needed for column elements
+                  default:
+                    console.error('Unsupported column field type:', columnElement.type);
+                }
+                
+                leftColumn.appendChild(columnWrapper);
+              });
+
+              // Create right column
+              const rightColumn = document.createElement('div');
+              rightColumn.className = 'quick-form-column';
+              element.extraAttributes?.rightColumn?.forEach(columnElement => {
+                const columnWrapper = document.createElement('div');
+                columnWrapper.className = 'quick-form-field';
+                
+                switch (columnElement.type) {
+                  case 'TextField':
+                    const textLabel = document.createElement('label');
+                    textLabel.className = 'quick-form-label';
+                    textLabel.textContent = columnElement.extraAttributes?.label || '';
+                    
+                    const textHelperText = document.createElement('div');
+                    textHelperText.className = 'quick-form-helper-text';
+                    textHelperText.textContent = columnElement.extraAttributes?.helperText || '';
+                    
+                    const textInput = document.createElement('input');
+                    textInput.type = 'text';
+                    textInput.name = columnElement.id;
+                    textInput.className = 'quick-form-input';
+                    textInput.placeholder = columnElement.extraAttributes?.placeHolder || '';
+                    textInput.required = columnElement.extraAttributes?.required || false;
+                    
+                    columnWrapper.appendChild(textLabel);
+                    columnWrapper.appendChild(textInput);
+                    columnWrapper.appendChild(textHelperText);
+                    break;
+
+                  case 'NumberField':
+                    const numberLabel = document.createElement('label');
+                    numberLabel.className = 'quick-form-label';
+                    numberLabel.textContent = columnElement.extraAttributes?.label || '';
+                    
+                    const numberHelperText = document.createElement('div');
+                    numberHelperText.className = 'quick-form-helper-text';
+                    numberHelperText.textContent = columnElement.extraAttributes?.helperText || '';
+                    
+                    const numberInput = document.createElement('input');
+                    numberInput.type = 'number';
+                    numberInput.name = columnElement.id;
+                    numberInput.className = 'quick-form-input';
+                    numberInput.placeholder = columnElement.extraAttributes?.placeHolder || '0';
+                    numberInput.required = columnElement.extraAttributes?.required || false;
+                    
+                    columnWrapper.appendChild(numberLabel);
+                    columnWrapper.appendChild(numberInput);
+                    columnWrapper.appendChild(numberHelperText);
+                    break;
+
+                  // Add other field type cases as needed for column elements
+                  default:
+                    console.error('Unsupported column field type:', columnElement.type);
+                }
+                
+                rightColumn.appendChild(columnWrapper);
+              });
+
+              columnContainer.appendChild(leftColumn);
+              columnContainer.appendChild(rightColumn);
+              wrapper.appendChild(columnContainer);
               break;
 
             case 'DualImageUpload':
@@ -634,19 +815,7 @@ export async function GET(
               break;
 
             default:
-              if (element.type === 'DualImageUploadField') {
-                console.error('Unsupported field type:', element.type);
-                return;
-              }
-
-              if (element.type === 'DualImageUpload') {
-                console.error('Unsupported field type:', element.type);
-                return;
-              }
-
-              if (value) {
-                data[fieldName] = value;
-              }
+              console.error('Unsupported field type:', element.type);
           }
 
           form.appendChild(wrapper);
@@ -701,7 +870,7 @@ export async function GET(
                   if (value) {
                     data[fieldName] = {
                       url: value,
-                      label: element.extraAttributes?.images?.find(img => img.url === value)?.label
+                      label: element.extraAttributes?.images?.find(img => img.src === value)?.label
                     };
                   }
                   break;
@@ -754,9 +923,7 @@ export async function GET(
                   break;
 
                 default:
-                  if (value) {
-                    data[fieldName] = value;
-                  }
+                  console.error('Unsupported field type:', element.type);
               }
             });
 
@@ -765,7 +932,7 @@ export async function GET(
 
             console.log('Submitting form data:', data);
 
-            const response = await fetch('/api/submit-form/${formId}', {
+            const response = await fetch(\`/api/submit-form/\${formId}\`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
