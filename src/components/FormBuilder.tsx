@@ -21,9 +21,23 @@ import useDesigner from "@/hooks/useDesigner";
 import { PiDotsThreeOutlineVerticalFill } from "react-icons/pi";
 import { formThemes } from "@/schemas/form";
 import { ElementsType, FormElement, FormElementInstance, FormElements } from "./FormElements";
+import { GetFormById } from "@/action/form";
+import { PageConfig } from "@/context/DesignerContext";
 
 function FormBuilder({ form }: { form: Form }) {
-  const { setElements, setSelectedElement, setTheme } = useDesigner();
+  const { 
+    setElements, 
+    setSelectedElement, 
+    setTheme,
+    setIsMultiPage,
+    setPages,
+    setCurrentPage,
+    isMultiPage,
+    pages,
+    currentPage,
+    elements 
+  } = useDesigner();
+
   const [isReady, setIsReady] = useState(false);
 
   const [isSmallScreen, setIsSmallScreen] = useState(false);
@@ -63,58 +77,69 @@ function FormBuilder({ form }: { form: Form }) {
   const sensors = useSensors(mouseSensor, touchSensor);
 
   useEffect(() => {
-    if (isReady) return;
-    const elements = JSON.parse(form.content) as FormElementInstance[];
-    
-    // Initialize theme from form
-    setTheme((form.theme || "default") as keyof typeof formThemes);
-    
-    // Reconstruct form elements properly
-    const reconstructedElements = elements.map((element: FormElementInstance) => {
-      const elementType = element.type as ElementsType;
-      // For TwoColumnLayoutField, we need to reconstruct the column elements
-      if (elementType === 'TwoColumnLayoutField') {
-        const reconstructedElement = FormElements[elementType].construct(element.id);
-        const typedElement = element as FormElementInstance & {
-          extraAttributes: {
-            leftColumn: FormElementInstance[];
-            rightColumn: FormElementInstance[];
-            gap: string;
-          }
-        };
-        
-        reconstructedElement.extraAttributes = {
-          ...element.extraAttributes,
-          gap: typedElement.extraAttributes.gap || "4",
-          leftColumn: typedElement.extraAttributes.leftColumn.map((colElement: FormElementInstance) => {
-            const colType = colElement.type as ElementsType;
-            return {
-              ...FormElements[colType].construct(colElement.id),
-              extraAttributes: colElement.extraAttributes
-            };
-          }),
-          rightColumn: typedElement.extraAttributes.rightColumn.map((colElement: FormElementInstance) => {
-            const colType = colElement.type as ElementsType;
-            return {
-              ...FormElements[colType].construct(colElement.id),
-              extraAttributes: colElement.extraAttributes
-            };
-          })
-        };
-        return reconstructedElement;
-      }
-      // For other elements, just reconstruct normally
-      return {
-        ...FormElements[elementType].construct(element.id),
-        extraAttributes: element.extraAttributes
-      };
-    });
+    const fetchFormData = async () => {
+      const loadedForm = await GetFormById(form.id);
+      if (!loadedForm) return;
 
-    setElements(reconstructedElements);
-    setSelectedElement(null);
-    const readyTimeout = setTimeout(() => setIsReady(true), 500);
-    return () => clearTimeout(readyTimeout);
-  }, [form, setElements, isReady, setSelectedElement, setTheme]);
+      setIsMultiPage(loadedForm.isMultiPage);
+      
+      if (loadedForm.isMultiPage && loadedForm.pages?.length > 0) {
+        const sortedPages = loadedForm.pages
+          .sort((a, b) => a.order - b.order)
+          .map(page => ({
+            elements: JSON.parse(page.elements) as FormElementInstance[],
+            config: JSON.parse(page.config) as PageConfig['config']
+          }));
+        
+        setPages(sortedPages);
+        setCurrentPage(0);
+      } else {
+        const elements = JSON.parse(loadedForm.content) as FormElementInstance[];
+        setTheme((loadedForm.theme || "default") as keyof typeof formThemes);
+        
+        const reconstructedElements = elements.map(element => {
+          const elementType = element.type as ElementsType;
+          
+          if (elementType === 'TwoColumnLayoutField') {
+            const typedElement = element as FormElementInstance & {
+              extraAttributes: {
+                leftColumn: FormElementInstance[];
+                rightColumn: FormElementInstance[];
+                gap: string;
+              }
+            };
+            
+            return {
+              ...FormElements[elementType].construct(element.id),
+              extraAttributes: {
+                ...typedElement.extraAttributes,
+                leftColumn: typedElement.extraAttributes.leftColumn.map(colElement => 
+                  reconstructElement(colElement)
+                ),
+                rightColumn: typedElement.extraAttributes.rightColumn.map(colElement => 
+                  reconstructElement(colElement)
+                )
+              }
+            };
+          }
+          return reconstructElement(element);
+        });
+
+        setElements(reconstructedElements);
+      }
+      setIsReady(true);
+    };
+
+    fetchFormData();
+  }, [form?.id, setElements, setSelectedElement, setTheme, setIsMultiPage, setPages, setCurrentPage]);
+
+  const reconstructElement = (element: FormElementInstance) => {
+    const elementType = element.type as ElementsType;
+    return {
+      ...FormElements[elementType].construct(element.id),
+      extraAttributes: element.extraAttributes
+    };
+  };
 
   if (!isReady) {
     return (
@@ -215,7 +240,11 @@ function FormBuilder({ form }: { form: Form }) {
           </div>
         </nav>
         <div className="flex w-full flex-grow items-center justify-center relative overflow-y-auto h-[200px] bg-accent bg-[url(/paper.svg)] dark:bg-[url(/paper-dark.svg)]">
-          <Designer />
+          {isMultiPage ? (
+            <Designer elements={pages[currentPage]?.elements || []} />
+          ) : (
+            <Designer elements={elements} />
+          )}
         </div>
       </main>
       <DragOverlayWrapper />

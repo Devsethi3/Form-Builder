@@ -9,19 +9,20 @@ datasource db {
 }
 
 model Form {
-  id              Int               @id @default(autoincrement())
-  userId          String
-  createdAt       DateTime          @default(now())
-  published       Boolean           @default(false)
-  name            String
-  description     String            @default("")
-  content         String            @default("[]")
-  visits          Int               @default(0)
-  submissions     Int               @default(0)
-  shareURL        String            @unique @default(uuid())
-  theme           String            @default("default")
+  id            Int       @id @default(autoincrement())
+  userId        String
+  createdAt     DateTime  @default(now())
+  published     Boolean   @default(false)
+  name          String
+  description   String?   @default("")
+  content       String    @default("[]")
+  visits        Int       @default(0)
+  submissions   Int       @default(0)
+  shareURL      String    @unique @default(uuid())
+  theme         String    @default("default")
+  isMultiPage   Boolean   @default(false)
+  pages         Page[]    @relation("FormToPages")
   FormSubmissions FormSubmissions[]
-
   @@unique([name, userId])
   @@index([userId, id])
 }
@@ -32,4 +33,13 @@ model FormSubmissions {
   formId    Int
   content   String
   form      Form     @relation(fields: [formId], references: [id])
+}
+
+model Page {
+  id          Int     @id @default(autoincrement())
+  form        Form    @relation("FormToPages", fields: [formId], references: [id])
+  formId      Int
+  order       Int
+  elements    String  @default("[]")
+  config      String  @default("{}")
 }

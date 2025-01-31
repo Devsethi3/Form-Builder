@@ -5,36 +5,37 @@ import { ThemeProvider } from "@/providers/ThemeProvider";
 const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700", "800",] });
 import NextTopLoader from 'nextjs-toploader'
 import { ClerkProvider } from "@clerk/nextjs";
-import DesignerContextProvider from "@/context/DesignerContext";
+import { DesignerContextProvider } from "@/context/DesignerContext";
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: "QuickForm - Build Custom Forms with Drag and Drop",
-  description: "Create your custom forms effortlessly with QuickForm. Simply drag and drop elements to generate tailored forms for your needs.",
+  title: "Quick Form Builder",
+  description: "Create forms quickly and easily",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <ClerkProvider>
-      <html lang="en">
-        <head>
-          <link rel="shortcut icon" href="/logo.svg" type="image/x-icon" />
-        </head>
-        <body className={poppins.className}>
-          <NextTopLoader color="#884DEE" crawlSpeed={200}
+      <html lang="en" className={poppins.className}>
+        <body>
+          <NextTopLoader
+            color="#2299DD"
+            initialPosition={0.08}
+            crawlSpeed={200}
+            showSpinner={true}
             height={4}
             crawl={true}
             easing="ease" />
-          <DesignerContextProvider>
-            <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+            <DesignerContextProvider>
               {children}
               <Toaster />
-            </ThemeProvider>
-          </DesignerContextProvider>
+            </DesignerContextProvider>
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>

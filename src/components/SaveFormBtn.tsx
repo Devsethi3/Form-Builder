@@ -1,28 +1,50 @@
-import React, { useTransition } from "react";
+import { UpdateFormContent, UpdateFormInput } from "@/action/form";
 import { Button } from "./ui/button";
 import { HiSaveAs } from "react-icons/hi";
-import useDesigner from "@/hooks/useDesigner";
+import { useTransition } from "react";
 import { toast } from "./ui/use-toast";
-import { FaSpinner } from "react-icons/fa";
-import { UpdateFormContent } from "@/action/form";
 import { useRouter } from "next/navigation";
+import { useDesigner, PageConfig } from "@/context/DesignerContext";
+import { FaSpinner } from "react-icons/fa";
 
 function SaveFormBtn({ id }: { id: number }) {
-  const { elements, theme } = useDesigner();
+  const { elements, isMultiPage, pages } = useDesigner();
   const [loading, startTransition] = useTransition();
   const router = useRouter();
 
   const updateFormContent = async () => {
     try {
-      const jsonElements = JSON.stringify(elements);
-      await UpdateFormContent(id, jsonElements, theme);
-      // Force a revalidation of the data
-      router.refresh();
+      console.log('Form state before save:', {
+        isMultiPage,
+        pagesLength: pages?.length || 0,
+        elementsLength: elements?.length || 0
+      });
+
+      const formData: UpdateFormInput = {
+        id,
+        content: isMultiPage ? "[]" : JSON.stringify(elements),
+        isMultiPage,
+        pages: isMultiPage
+          ? (pages || []).map((page: PageConfig, index: number) => ({
+              elements: JSON.stringify(page.elements),
+              config: JSON.stringify(page.config),
+              order: index,
+            }))
+          : [],
+      };
+
+      console.log('Sending form data:', formData);
+
+      const result = await UpdateFormContent(formData);
+      console.log('Save result:', result);
+
       toast({
         title: "Success",
         description: "Your form has been saved",
       });
+      router.refresh();
     } catch (error) {
+      console.error('Error saving form:', error);
       toast({
         title: "Error",
         description: "Something went wrong",
@@ -30,9 +52,10 @@ function SaveFormBtn({ id }: { id: number }) {
       });
     }
   };
+
   return (
     <Button
-      variant={"outline"}
+      variant="outline"
       className="gap-2"
       disabled={loading}
       onClick={() => {

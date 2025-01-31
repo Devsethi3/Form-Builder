@@ -3,6 +3,34 @@
 import prisma from "@/lib/prisma";
 import { formSchema, formSchemaType } from "@/schemas/form";
 import { currentUser } from "@clerk/nextjs";
+import { PageConfig } from "@/context/DesignerContext";
+import { z } from "zod";
+import { Form } from "@prisma/client";
+
+export type FullForm = Form & {
+  pages: Page[];
+};
+
+export type Page = {
+  elements: string;
+  config: string;
+  order: number;
+};
+
+const pageSchema = z.object({
+  elements: z.string(),
+  config: z.string(),
+  order: z.number(),
+});
+
+const updateFormSchema = z.object({
+  id: z.number(),
+  content: z.string(),
+  isMultiPage: z.boolean(),
+  pages: z.array(pageSchema),
+});
+
+export type UpdateFormInput = z.infer<typeof updateFormSchema>;
 
 class UserNotFoundErr extends Error {}
 
@@ -145,39 +173,62 @@ export async function GetForms() {
   });
 }
 
-export async function GetFormById(id: number) {
+export async function GetFormById(id: number): Promise<FullForm | null> {
+  const form = await prisma.form.findUnique({
+    where: { id },
+    include: {
+      pages: {
+        orderBy: {
+          order: 'asc'
+        }
+      }
+    }
+  });
+
+  if (!form) return null;
+
+  return form;
+}
+
+export async function UpdateFormContent(input: UpdateFormInput) {
+  console.log('Received form data:', input); // Debug log
+  
+  const validation = updateFormSchema.safeParse(input);
+  if (!validation.success) {
+    console.error('Validation error:', validation.error); // Debug log
+    throw new Error('Invalid form data');
+  }
+
   const user = await currentUser();
   if (!user) {
     throw new UserNotFoundErr();
   }
 
-  return await prisma.form.findFirst({
-    where: {
-      id,
-      userId: user.id,
-    },
-  });
-}
+  const { id, content, isMultiPage, pages } = input;
 
-export async function UpdateFormContent(id: number, jsonContent: string, theme?: string) {
   try {
-    const user = await currentUser();
-    if (!user) {
-      throw new UserNotFoundErr();
-    }
-
-    return await prisma.form.update({
+    const form = await prisma.form.update({
       where: {
-        userId: user.id,
         id,
+        userId: user.id,
       },
       data: {
-        content: jsonContent,
-        ...(theme && { theme }),
+        content,
+        isMultiPage,
+        pages: {
+          deleteMany: {},
+          create: pages,
+        },
       },
+      include: {
+        pages: true
+      }
     });
+
+    console.log('Updated form:', form); // Debug log
+    return form;
   } catch (error) {
-    console.error('Error in UpdateFormContent:', error);
+    console.error('Database error:', error); // Debug log
     throw error;
   }
 }
