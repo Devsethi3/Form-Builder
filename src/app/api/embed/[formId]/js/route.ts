@@ -225,6 +225,154 @@ export async function GET(
             return imageWrapper;
           }
           
+          case 'ImageUploadField': {
+            const { label, helperText, required } = element.extraAttributes;
+            const wrapper = createWrapper();
+            if (label) wrapper.appendChild(createLabel(label));
+            
+            const uploadWrapper = createElement('div', 'quick-form-upload');
+            const input = createInput('file', element.id, required);
+            input.accept = 'image/*';
+            
+            const preview = createElement('div', 'quick-form-image-preview');
+            input.onchange = function(e) {
+              const target = e.target;
+              const file = target && target.files ? target.files[0] : null;
+              if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                  const target = e.target;
+                  preview.innerHTML = '';
+                  const img = createElement('img');
+                  img.src = target ? target.result : '';
+                  preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+              }
+            };
+            
+            uploadWrapper.appendChild(input);
+            uploadWrapper.appendChild(preview);
+            wrapper.appendChild(uploadWrapper);
+            if (helperText) wrapper.appendChild(createHelperText(helperText));
+            return wrapper;
+          }
+
+          case 'DualImageUpload': {
+            const { label, helperText, required } = element.extraAttributes;
+            const wrapper = createWrapper();
+            if (label) wrapper.appendChild(createLabel(label));
+            
+            const uploadsWrapper = createElement('div', 'quick-form-dual-upload');
+            
+            // First upload
+            const upload1 = createElement('div', 'quick-form-upload');
+            const input1 = createInput('file', element.id + '_1', required);
+            input1.accept = 'image/*';
+            const preview1 = createElement('div', 'quick-form-image-preview');
+            input1.onchange = function(e) {
+              const target = e.target;
+              const file = target && target.files ? target.files[0] : null;
+              if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                  const target = e.target;
+                  preview1.innerHTML = '';
+                  const img = createElement('img');
+                  img.src = target ? target.result : '';
+                  preview1.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+              }
+            };
+            upload1.appendChild(input1);
+            upload1.appendChild(preview1);
+            
+            // Second upload
+            const upload2 = createElement('div', 'quick-form-upload');
+            const input2 = createInput('file', element.id + '_2', required);
+            input2.accept = 'image/*';
+            const preview2 = createElement('div', 'quick-form-image-preview');
+            input2.onchange = function(e) {
+              const target = e.target;
+              const file = target && target.files ? target.files[0] : null;
+              if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                  const target = e.target;
+                  preview2.innerHTML = '';
+                  const img = createElement('img');
+                  img.src = target ? target.result : '';
+                  preview2.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+              }
+            };
+            upload2.appendChild(input2);
+            upload2.appendChild(preview2);
+            
+            uploadsWrapper.appendChild(upload1);
+            uploadsWrapper.appendChild(upload2);
+            wrapper.appendChild(uploadsWrapper);
+            if (helperText) wrapper.appendChild(createHelperText(helperText));
+            return wrapper;
+          }
+
+          case 'PictureSelect': {
+            const { label, helperText, required, options } = element.extraAttributes;
+            const wrapper = createWrapper();
+            if (label) wrapper.appendChild(createLabel(label));
+            
+            const optionsWrapper = createElement('div', 'quick-form-picture-select');
+            const hiddenInput = createInput('hidden', element.id, required);
+            
+            options.forEach((option, index) => {
+              const optionWrapper = createElement('div', 'quick-form-picture-option');
+              const img = createElement('img');
+              img.src = option.base64Image;
+              img.alt = option.label || 'Option ' + (index + 1);
+              
+              optionWrapper.onclick = function() {
+                // Remove selected class from all options
+                const allOptions = optionsWrapper.getElementsByClassName('quick-form-picture-option');
+                Array.from(allOptions).forEach(opt => opt.classList.remove('selected'));
+                // Add selected class to clicked option
+                optionWrapper.classList.add('selected');
+                // Update hidden input
+                hiddenInput.value = option.value || index.toString();
+              };
+              
+              if (option.label) {
+                const label = createElement('div', 'quick-form-picture-label', option.label);
+                optionWrapper.appendChild(label);
+              }
+              
+              optionWrapper.appendChild(img);
+              optionsWrapper.appendChild(optionWrapper);
+            });
+            
+            optionsWrapper.appendChild(hiddenInput);
+            wrapper.appendChild(optionsWrapper);
+            if (helperText) wrapper.appendChild(createHelperText(helperText));
+            return wrapper;
+          }
+
+          case 'CheckboxField': {
+            const { label, helperText, required } = element.extraAttributes;
+            const wrapper = createWrapper();
+            
+            const checkboxWrapper = createElement('div', 'quick-form-checkbox');
+            const input = createInput('checkbox', element.id, required);
+            const labelEl = createLabel(label);
+            
+            checkboxWrapper.appendChild(input);
+            checkboxWrapper.appendChild(labelEl);
+            wrapper.appendChild(checkboxWrapper);
+            
+            if (helperText) wrapper.appendChild(createHelperText(helperText));
+            return wrapper;
+          }
+          
           default:
             console.warn('Unknown element type:', element.type);
             return null;
@@ -288,11 +436,11 @@ export async function GET(
 
     return new NextResponse(bundleScript, {
       headers: {
-        'Content-Type': 'application/javascript',
-      },
+        'Content-Type': 'application/javascript'
+      }
     });
   } catch (error) {
-    console.error("Error generating form bundle:", error);
-    return new NextResponse("Error generating form bundle", { status: 500 });
+    console.error('Error generating form bundle:', error);
+    return new NextResponse('Error generating form bundle', { status: 500 });
   }
 }

@@ -97,5 +97,68 @@ export function getImageStyles(): string {
       color: #4B5563;
       font-size: 14px;
     }
+
+    .quick-form-upload {
+      border: 2px dashed #ccc;
+      border-radius: 4px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .quick-form-image-preview {
+      margin-top: 10px;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .quick-form-image-preview img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+
+    .quick-form-dual-upload {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .quick-form-picture-select {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-top: 10px;
+    }
+
+    .quick-form-picture-option {
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .quick-form-picture-option:hover {
+      border-color: #6b7280;
+    }
+
+    .quick-form-picture-option.selected {
+      border-color: #2563eb;
+      background-color: #eff6ff;
+    }
+
+    .quick-form-picture-option img {
+      width: 100%;
+      height: auto;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+
+    .quick-form-picture-label {
+      text-align: center;
+      font-size: 0.875rem;
+      color: #4b5563;
+    }
   `;
 }
