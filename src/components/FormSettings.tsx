@@ -11,6 +11,8 @@ import { Button } from "./ui/button";
 import { BiPlus } from "react-icons/bi";
 import { Separator } from "./ui/separator";
 
+type ThemeType = keyof typeof formThemes;
+
 function FormSettings() {
   const { 
     isMultiPage, 
@@ -96,6 +98,16 @@ function FormSettings() {
     });
   };
 
+  const handleThemeChange = (value: string) => {
+    if (isValidTheme(value)) {
+      setTheme(value);
+    }
+  };
+
+  const isValidTheme = (value: string): value is ThemeType => {
+    return Object.keys(formThemes).includes(value);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
@@ -155,7 +167,7 @@ function FormSettings() {
       <Separator />
       <div className="space-y-2">
         <Label className="text-sm">Theme</Label>
-        <Select value={theme} onValueChange={setTheme}>
+        <Select value={theme} onValueChange={handleThemeChange}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>

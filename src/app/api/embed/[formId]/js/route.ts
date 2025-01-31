@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getAllStyles } from '@/lib/styles/embed';
+import type { Form, Page } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,13 +18,13 @@ export async function GET(
     const formId = parseInt(params.formId);
     console.log("Looking for form:", formId);
     
-    // Get the form data - only published forms are accessible
+    // First get the form
     const form = await prisma.form.findFirst({
       where: {
         id: formId,
         published: true,
-      },
-    });
+      }
+    }) as Form | null;
 
     console.log("Form found:", form);
 
@@ -32,10 +33,22 @@ export async function GET(
       return new NextResponse("Form not found or not published", { status: 404 });
     }
 
-    // Parse the form content
+    // Get pages if it's a multi-page form
     let formContent;
     try {
-      formContent = JSON.parse(form.content);
+      if (form.isMultiPage) {
+        const pages = await prisma.page.findMany({
+          where: { formId: form.id },
+          orderBy: { order: 'asc' }
+        });
+        
+        formContent = pages.reduce((acc: any[], page) => {
+          const pageElements = JSON.parse(page.elements);
+          return [...acc, ...pageElements];
+        }, []);
+      } else {
+        formContent = JSON.parse(form.content);
+      }
       console.log("Form content parsed:", formContent);
     } catch (error) {
       console.error("Error parsing form content:", error);
@@ -48,8 +61,121 @@ export async function GET(
     }
 
     // Get all styles as a single string and escape it for JavaScript
-    const styles = getAllStyles()
-      .replace(/\\/g, '\\\\')
+    const styles = `
+      ${getAllStyles(form.theme)}
+
+      .quick-form-two-column {
+        width: 100%;
+        margin: 1rem 0;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .quick-form-column {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        padding: 0 0.5rem;
+      }
+
+      .quick-form-column > * {
+        width: 100%;
+      }
+
+      @media (max-width: 640px) {
+        .quick-form-two-column {
+          grid-template-columns: 1fr;
+        }
+        
+        .quick-form-column {
+          padding: 0;
+        }
+      }
+
+      /* Base styles */
+      .quick-form-wrapper {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 1rem;
+      }
+
+      .quick-form-title {
+        font-size: 2em;
+        margin-bottom: 1rem;
+        font-weight: 600;
+      }
+
+      .quick-form-subtitle {
+        font-size: 1.5em;
+        margin-bottom: 1rem;
+        font-weight: 500;
+        color: #666;
+      }
+
+      .quick-form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+      }
+
+      .quick-form-input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .quick-form-helper-text {
+        font-size: 0.875rem;
+        color: #666;
+        margin-top: 0.25rem;
+      }
+
+      .quick-form-error {
+        color: #dc2626;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+      }
+
+      /* Rating scale styles */
+      .quick-form-rating-wrapper {
+        margin: 1rem 0;
+      }
+
+      .quick-form-rating-question {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+      }
+
+      .quick-form-rating-scale {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .quick-form-rating-label {
+        font-size: 0.875rem;
+        color: #666;
+        text-align: center;
+      }
+
+      .quick-form-rating-radio {
+        margin: 0 0.25rem;
+      }
+
+      /* Image styles */
+      .quick-form-image {
+        max-width: 100%;
+        height: auto;
+        margin: 1rem auto;
+        display: block;
+      }
+    `.replace(/\\/g, '\\\\')
       .replace(/'/g, "\\'")
       .replace(/\n/g, ' ')
       .trim();
@@ -122,6 +248,36 @@ export async function GET(
             return subtitleEl;
           }
           
+          case 'TwoColumnLayoutField': {
+            const { gap, columns } = element.extraAttributes;
+            const layoutWrapper = createElement('div', 'quick-form-two-column');
+            layoutWrapper.style.display = 'grid';
+            layoutWrapper.style.gridTemplateColumns = 'repeat(2, 1fr)';
+            layoutWrapper.style.gap = (parseFloat(gap) * 0.25) + 'rem';
+
+            // Create left column
+            const leftColumn = createElement('div', 'quick-form-column');
+            if (columns.left && Array.isArray(columns.left)) {
+              columns.left.forEach(childElement => {
+                const childNode = createFormElement(childElement);
+                if (childNode) leftColumn.appendChild(childNode);
+              });
+            }
+            layoutWrapper.appendChild(leftColumn);
+
+            // Create right column
+            const rightColumn = createElement('div', 'quick-form-column');
+            if (columns.right && Array.isArray(columns.right)) {
+              columns.right.forEach(childElement => {
+                const childNode = createFormElement(childElement);
+                if (childNode) rightColumn.appendChild(childNode);
+              });
+            }
+            layoutWrapper.appendChild(rightColumn);
+
+            return layoutWrapper;
+          }
+          
           case 'RatingScaleField': {
             const { 
               label, helperText, required, question,
@@ -171,30 +327,6 @@ export async function GET(
             if (helperText) fieldWrapper.appendChild(createHelperText(helperText));
             
             return fieldWrapper;
-          }
-          
-          case 'TwoColumnLayoutField': {
-            const { gap, leftColumn, rightColumn } = element.extraAttributes;
-            
-            const columnWrapper = createElement('div', 'quick-form-two-column');
-            columnWrapper.style.gap = gap + 'px';
-            
-            const leftCol = createElement('div', 'quick-form-column');
-            leftColumn.forEach(el => {
-              const columnElement = createFormElement(el);
-              if (columnElement) leftCol.appendChild(columnElement);
-            });
-            
-            const rightCol = createElement('div', 'quick-form-column');
-            rightColumn.forEach(el => {
-              const columnElement = createFormElement(el);
-              if (columnElement) rightCol.appendChild(columnElement);
-            });
-            
-            columnWrapper.appendChild(leftCol);
-            columnWrapper.appendChild(rightCol);
-            
-            return columnWrapper;
           }
           
           case 'ImageElement': {

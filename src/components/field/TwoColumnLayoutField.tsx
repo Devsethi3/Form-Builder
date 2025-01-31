@@ -13,21 +13,34 @@ import { cn } from "@/lib/utils";
 import { formThemes } from "@/schemas/form";
 import { useDroppable } from "@dnd-kit/core";
 import { idGenerator } from "@/lib/idGenerator";
-import { DesignerElementWrapper } from "../Designer";
+import { DesignerElementWrapper } from "../DesignerElementWrapper";
 import { Suspense } from "react";
 
 const type: ElementsType = "TwoColumnLayoutField";
 
-const extraAttributes = {
-  gap: "4", // Tailwind gap spacing
-  leftColumn: [] as FormElementInstance[],
-  rightColumn: [] as FormElementInstance[],
+type ColumnType = 'left' | 'right';
+
+interface TwoColumnLayoutAttributes {
+  gap: string;
+  columns: {
+    [key in ColumnType]: FormElementInstance[];
+  };
+}
+
+const extraAttributes: TwoColumnLayoutAttributes = {
+  gap: "4",
+  columns: {
+    left: [],
+    right: []
+  }
 };
 
 const propertiesSchema = z.object({
   gap: z.string(),
-  leftColumn: z.array(z.any()).default([]),
-  rightColumn: z.array(z.any()).default([]),
+  columns: z.object({
+    left: z.array(z.any()).default([]),
+    right: z.array(z.any()).default([])
+  })
 });
 
 // Create a memoized wrapper for form components
@@ -65,8 +78,10 @@ export const TwoColumnLayoutFieldFormElement: FormElement = {
     type,
     extraAttributes: {
       ...extraAttributes,
-      leftColumn: [], // Create new arrays for each instance
-      rightColumn: [], // Create new arrays for each instance
+      columns: {
+        left: [],
+        right: []
+      }
     },
   }),
   designerBtnElement: {
@@ -80,12 +95,14 @@ export const TwoColumnLayoutFieldFormElement: FormElement = {
 };
 
 type CustomInstance = FormElementInstance & {
-  extraAttributes: typeof extraAttributes;
+  extraAttributes: TwoColumnLayoutAttributes;
 };
 
 function DesignerComponent({ elementInstance }: { elementInstance: FormElementInstance }) {
   const element = elementInstance as CustomInstance;
-  const { gap, leftColumn, rightColumn } = element.extraAttributes;
+  const { gap, columns } = element.extraAttributes;
+  const leftColumn = columns.left;
+  const rightColumn = columns.right;
   const { theme, addElement, selectedElement } = useDesigner();
   const { styles } = formThemes[theme];
   const [mouseIsOver, setMouseIsOver] = useState<boolean>(false);
@@ -133,7 +150,7 @@ function DesignerComponent({ elementInstance }: { elementInstance: FormElementIn
               className="mb-4 w-full relative z-10"
               style={{ pointerEvents: 'auto' }}
             >
-              <DesignerElementWrapper element={element} />
+              <DesignerElementWrapper element={element} onRemove={() => {}} />
             </div>
           ))}
           {!leftColumn.length && (
@@ -155,7 +172,7 @@ function DesignerComponent({ elementInstance }: { elementInstance: FormElementIn
               className="mb-4 w-full relative z-10"
               style={{ pointerEvents: 'auto' }}
             >
-              <DesignerElementWrapper element={element} />
+              <DesignerElementWrapper element={element} onRemove={() => {}} />
             </div>
           ))}
           {!rightColumn.length && (
@@ -176,54 +193,21 @@ function DesignerComponent({ elementInstance }: { elementInstance: FormElementIn
 
 function FormComponent({ elementInstance }: { elementInstance: FormElementInstance }) {
   const element = elementInstance as CustomInstance;
-  const { gap, leftColumn, rightColumn } = element.extraAttributes;
-  const { theme } = useDesigner();
-  const { styles } = formThemes[theme];
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Quick check to ensure form elements exist
-    const validateElements = () => {
-      try {
-        [...leftColumn, ...rightColumn].forEach((element) => {
-          if (!FormElements[element.type]) {
-            throw new Error(`Form element type ${element.type} not found`);
-          }
-        });
-        return true;
-      } catch (error) {
-        console.error('Error validating form elements:', error);
-        return false;
-      }
-    };
-
-    validateElements();
-    setIsLoading(false);
-  }, [leftColumn, rightColumn]);
-
-  const renderColumn = useCallback((elements: FormElementInstance[]) => {
-    return elements.map((element) => (
-      <div key={element.id} className="mb-4 w-full">
-        <div role="alert">
-          <Suspense fallback={<div>Loading...</div>}>
-            <MemoizedFormComponent element={element} />
-          </Suspense>
-        </div>
-      </div>
-    ));
-  }, []);
-
-  if (isLoading) {
-    return <div>Loading form elements...</div>;
-  }
+  const { gap, columns } = element.extraAttributes;
+  const leftColumn = columns.left;
+  const rightColumn = columns.right;
 
   return (
     <div className={cn("grid grid-cols-2 w-full", `gap-${gap}`)}>
-      <div className="w-full">
-        {renderColumn(leftColumn)}
+      <div className="flex flex-col gap-4">
+        {leftColumn.map((element) => (
+          <MemoizedFormComponent key={element.id} element={element} />
+        ))}
       </div>
-      <div className="w-full">
-        {renderColumn(rightColumn)}
+      <div className="flex flex-col gap-4">
+        {rightColumn.map((element) => (
+          <MemoizedFormComponent key={element.id} element={element} />
+        ))}
       </div>
     </div>
   );
@@ -232,13 +216,12 @@ function FormComponent({ elementInstance }: { elementInstance: FormElementInstan
 function PropertiesComponent({ elementInstance }: { elementInstance: FormElementInstance }) {
   const element = elementInstance as CustomInstance;
   const { updateElement } = useDesigner();
-  const form = useForm<propertiesFormSchemaType>({
+  const form = useForm<z.infer<typeof propertiesSchema>>({
     resolver: zodResolver(propertiesSchema),
     mode: "onBlur",
     defaultValues: {
       gap: element.extraAttributes.gap,
-      leftColumn: element.extraAttributes.leftColumn,
-      rightColumn: element.extraAttributes.rightColumn,
+      columns: element.extraAttributes.columns
     },
   });
 
@@ -246,21 +229,25 @@ function PropertiesComponent({ elementInstance }: { elementInstance: FormElement
     form.reset(element.extraAttributes);
   }, [element, form]);
 
-  function applyChanges(values: propertiesFormSchemaType) {
+  function applyChanges(values: z.infer<typeof propertiesSchema>) {
+    const { gap, columns } = values;
     updateElement(element.id, {
       ...element,
-      extraAttributes: values,
+      extraAttributes: {
+        gap,
+        columns
+      },
     });
   }
 
   return (
     <Form {...form}>
       <form
-        onBlur={() => {
-          form.handleSubmit(applyChanges)();
-        }}
         onSubmit={(e) => {
           e.preventDefault();
+          form.handleSubmit(applyChanges)();
+        }}
+        onBlur={() => {
           form.handleSubmit(applyChanges)();
         }}
         className="space-y-3"
@@ -270,17 +257,16 @@ function PropertiesComponent({ elementInstance }: { elementInstance: FormElement
           name="gap"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Gap Between Columns</FormLabel>
+              <FormLabel>Gap</FormLabel>
               <FormControl>
-                <select
+                <input
+                  type="number"
+                  min="0"
+                  max="16"
                   {...field}
-                  className="w-full border border-gray-300 rounded-md p-2"
-                >
-                  <option value="2">Small</option>
-                  <option value="4">Medium</option>
-                  <option value="6">Large</option>
-                  <option value="8">Extra Large</option>
-                </select>
+                  onChange={(e) => field.onChange(e.target.value)}
+                  className="w-full border rounded-md h-10 px-3"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -291,4 +277,4 @@ function PropertiesComponent({ elementInstance }: { elementInstance: FormElement
   );
 }
 
-type propertiesFormSchemaType = z.infer<typeof propertiesSchema>;
+export type { propertiesSchema as propertiesFormSchemaType };

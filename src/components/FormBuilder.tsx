@@ -1,7 +1,7 @@
 "use client";
 
-import { Form } from "@prisma/client";
-import React, { useEffect, useState } from "react";
+import { type Form } from '@prisma/client';
+import React, { useEffect, useCallback, useState } from "react";
 import PreviewDialogBtn from "./PreviewDialogBtn";
 import PublishFormBtn from "./PublishFormBtn";
 import GenerateCodeBtn from "./GenerateCodeBtn";
@@ -21,10 +21,14 @@ import useDesigner from "@/hooks/useDesigner";
 import { PiDotsThreeOutlineVerticalFill } from "react-icons/pi";
 import { formThemes } from "@/schemas/form";
 import { ElementsType, FormElement, FormElementInstance, FormElements } from "./FormElements";
-import { GetFormById } from "@/action/form";
+import { GetFormById, type FullForm } from "@/action/form";
 import { PageConfig } from "@/context/DesignerContext";
 
-function FormBuilder({ form }: { form: Form }) {
+function FormBuilder({ id }: { id: number }) {
+  const [loadedForm, setLoadedForm] = useState<FullForm | null>(null);
+  const [isReady, setIsReady] = useState(false);
+  const [isOpen, setIsOpen] = useState(false)
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
   const { 
     setElements, 
     setSelectedElement, 
@@ -37,11 +41,6 @@ function FormBuilder({ form }: { form: Form }) {
     currentPage,
     elements 
   } = useDesigner();
-
-  const [isReady, setIsReady] = useState(false);
-
-  const [isSmallScreen, setIsSmallScreen] = useState(false);
-  const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
     setIsSmallScreen(window.innerWidth <= 768);
@@ -78,13 +77,14 @@ function FormBuilder({ form }: { form: Form }) {
 
   useEffect(() => {
     const fetchFormData = async () => {
-      const loadedForm = await GetFormById(form.id);
-      if (!loadedForm) return;
+      const form = await GetFormById(id);
+      if (!form) return;
 
-      setIsMultiPage(loadedForm.isMultiPage);
+      setLoadedForm(form);
+      setIsMultiPage(form.isMultiPage);
       
-      if (loadedForm.isMultiPage && loadedForm.pages?.length > 0) {
-        const sortedPages = loadedForm.pages
+      if (form.isMultiPage && form.pages?.length > 0) {
+        const sortedPages = form.pages
           .sort((a, b) => a.order - b.order)
           .map(page => ({
             elements: JSON.parse(page.elements) as FormElementInstance[],
@@ -94,8 +94,8 @@ function FormBuilder({ form }: { form: Form }) {
         setPages(sortedPages);
         setCurrentPage(0);
       } else {
-        const elements = JSON.parse(loadedForm.content) as FormElementInstance[];
-        setTheme((loadedForm.theme || "default") as keyof typeof formThemes);
+        const elements = JSON.parse(form.content) as FormElementInstance[];
+        setTheme((form.theme || "default") as keyof typeof formThemes);
         
         const reconstructedElements = elements.map(element => {
           const elementType = element.type as ElementsType;
@@ -131,7 +131,7 @@ function FormBuilder({ form }: { form: Form }) {
     };
 
     fetchFormData();
-  }, [form?.id, setElements, setSelectedElement, setTheme, setIsMultiPage, setPages, setCurrentPage]);
+  }, [id, setElements, setSelectedElement, setTheme, setIsMultiPage, setPages, setCurrentPage]);
 
   const reconstructElement = (element: FormElementInstance) => {
     const elementType = element.type as ElementsType;
@@ -149,9 +149,9 @@ function FormBuilder({ form }: { form: Form }) {
     );
   }
 
-  const shareUrl = `${window.location.origin}/submit/${form.shareURL}`;
+  const shareUrl = `${window.location.origin}/submit/${loadedForm?.shareURL}`;
 
-  if (form.published) {
+  if (loadedForm?.published) {
     return (
       <>
         <Confetti width={window.innerWidth} height={window.innerHeight} recycle={false} numberOfPieces={1000} />
@@ -179,7 +179,7 @@ function FormBuilder({ form }: { form: Form }) {
                 >
                   Copy link
                 </Button>
-                <GenerateCodeBtn id={form.id} />
+                <GenerateCodeBtn id={id} />
               </div>
             </div>
             <div className="flex justify-between items-center w-full mt-4">
@@ -206,12 +206,12 @@ function FormBuilder({ form }: { form: Form }) {
         <nav className="flex justify-between border-b-2 lg:py-4 lg:px-9 py-2 px-4 gap-3 items-center">
           <h2 className="truncate font-medium">
             <span className="text-muted-foreground mr-2">Form:</span>
-            {form.name}
+            {loadedForm?.name}
           </h2>
           <div className="flex items-center gap-2">
             <ThemeSelector />
             <PreviewDialogBtn />
-            {!form.published && (
+            {!loadedForm?.published && (
               <>
                 {isSmallScreen ?
                   (
@@ -222,17 +222,17 @@ function FormBuilder({ form }: { form: Form }) {
                       </Button>
                       {isOpen && <div className="absolute z-[1] bg-[#fff] rounded-md border p-4 min-h-30 top-[2.9rem] shadow-md right-0">
                         <div className="flex flex-col gap-3">
-                          <SaveFormBtn id={form.id} />
-                          <PublishFormBtn id={form.id} />
-                          <GenerateCodeBtn id={form.id} />
+                          <SaveFormBtn id={id} />
+                          <PublishFormBtn id={id} />
+                          <GenerateCodeBtn id={id} />
                         </div>
                       </div>}
                     </div>
                   ) : (
                     <>
-                      <SaveFormBtn id={form.id} />
-                      <PublishFormBtn id={form.id} />
-                      <GenerateCodeBtn id={form.id} />
+                      <SaveFormBtn id={id} />
+                      <PublishFormBtn id={id} />
+                      <GenerateCodeBtn id={id} />
                     </>
                   )}
               </>

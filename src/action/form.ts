@@ -5,9 +5,21 @@ import { formSchema, formSchemaType } from "@/schemas/form";
 import { currentUser } from "@clerk/nextjs";
 import { PageConfig } from "@/context/DesignerContext";
 import { z } from "zod";
-import { Form } from "@prisma/client";
+import { Form, Prisma } from "@prisma/client";
 
-export type FullForm = Form & {
+export type FullForm = {
+  id: number;
+  userId: string;
+  createdAt: Date;
+  published: boolean;
+  name: string;
+  description: string | null;
+  content: string;
+  visits: number;
+  submissions: number;
+  shareURL: string;
+  theme: string;
+  isMultiPage: boolean;
   pages: Page[];
 };
 
@@ -262,20 +274,52 @@ export async function PublishForm(id: number) {
 }
 
 export async function GetFormContentByUrl(formUrl: string) {
-  return await prisma.form.update({
+  const form = await prisma.form.findUnique({
     select: {
       content: true,
       theme: true,
-    },
-    data: {
-      visits: {
-        increment: 1,
+      isMultiPage: true,
+      pages: {
+        select: {
+          elements: true,
+          config: true,
+          order: true,
+        },
+        orderBy: {
+          order: 'asc',
+        },
       },
     },
     where: {
       shareURL: formUrl,
     },
   });
+
+  if (!form) return null;
+
+  // For multi-page forms, combine all elements from pages
+  if (form.isMultiPage && form.pages) {
+    const allElements = form.pages.reduce((acc, page) => {
+      const pageElements = JSON.parse(page.elements);
+      return [...acc, ...pageElements];
+    }, [] as any[]);
+
+    return {
+      theme: form.theme,
+      content: JSON.stringify(allElements),
+    };
+  }
+
+  // Update visit count
+  await prisma.form.update({
+    where: { shareURL: formUrl },
+    data: { visits: { increment: 1 } },
+  });
+
+  return {
+    theme: form.theme,
+    content: form.content,
+  };
 }
 
 export async function SubmitForm(formUrl: string, content: string) {

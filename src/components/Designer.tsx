@@ -12,9 +12,26 @@ import useDesigner from "@/hooks/useDesigner";
 import { formThemes } from "@/schemas/form";
 import PageNavigation from "./PageNavigation";
 
-function Designer() {
+type ColumnType = 'left' | 'right';
+
+interface TwoColumnLayoutAttributes {
+  columns: {
+    [key in ColumnType]: FormElementInstance[];
+  };
+}
+
+interface TwoColumnLayoutInstance extends FormElementInstance {
+  type: 'TwoColumnLayoutField';
+  extraAttributes: TwoColumnLayoutAttributes;
+}
+
+interface DesignerProps {
+  elements?: FormElementInstance[];
+}
+
+function Designer({ elements: propElements }: DesignerProps) {
     const { 
-        elements, 
+        elements: contextElements, 
         addElement, 
         selectedElement, 
         setSelectedElement, 
@@ -24,8 +41,11 @@ function Designer() {
         isMultiPage,
         pages,
         currentPage,
-        setPages
+        setPages,
+        setElements
     } = useDesigner();
+
+    const elements = propElements || contextElements;
 
     const droppable = useDroppable({
         id: "designer-drop-area",
@@ -72,7 +92,7 @@ function Designer() {
             // Handle dropping into columns
             if (isDroppingOverColumn) {
                 const type = active.data?.current?.type;
-                const columnId = over.data?.current?.columnId;
+                const columnId = over.data?.current?.columnId as ColumnType;
                 const parentId = over.data?.current?.elementId;
                 
                 // Find the parent TwoColumnLayout element
@@ -80,26 +100,38 @@ function Designer() {
                 if (parentIndex === -1) return;
 
                 const parent = elements[parentIndex];
-                if (parent.type !== "TwoColumnLayout") return;
+                const isTwoColumnLayout = (el: FormElementInstance): el is TwoColumnLayoutInstance => 
+                    el.type === 'TwoColumnLayoutField';
+                
+                if (!isTwoColumnLayout(parent)) return;
 
                 // Create new element
                 const newElement = FormElements[type as ElementsType].construct(idGenerator());
 
                 // Update the appropriate column
                 const updatedColumns = { ...parent.extraAttributes.columns };
-                updatedColumns[columnId] = [...updatedColumns[columnId], newElement];
+                updatedColumns[columnId] = [...(updatedColumns[columnId] || []), newElement];
 
                 // Update the parent element
-                const updatedParent = {
+                const updatedParent: TwoColumnLayoutInstance = {
                     ...parent,
+                    type: 'TwoColumnLayoutField',
                     extraAttributes: {
-                        ...parent.extraAttributes,
-                        columns: updatedColumns,
-                    },
+                        columns: updatedColumns
+                    }
                 };
 
-                // Update elements array
-                updateElement(parentId, updatedParent);
+                // Update elements list
+                const updatedElements = [...elements];
+                updatedElements[parentIndex] = updatedParent;
+                
+                if (isMultiPage) {
+                    const updatedPages = [...pages];
+                    updatedPages[currentPage].elements = updatedElements;
+                    setPages(updatedPages);
+                } else {
+                    setElements(updatedElements);
+                }
                 return;
             }
 
@@ -258,7 +290,12 @@ function Designer() {
     );
 }
 
-function DesignerElementWrapper({ element, onRemove }: { element: FormElementInstance; onRemove: () => void }) {
+export interface DesignerElementWrapperProps {
+  element: FormElementInstance;
+  onRemove: () => void;
+}
+
+export function DesignerElementWrapper({ element, onRemove }: DesignerElementWrapperProps) {
     const { setSelectedElement, selectedElement } = useDesigner();
 
     const [mouseIsOver, setMouseIsOver] = useState<boolean>(false);
