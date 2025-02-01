@@ -62,7 +62,7 @@ export async function GET(
 
     // Get all styles as a single string and escape it for JavaScript
     const styles = `
-      ${getAllStyles(form.theme)}
+      ${getAllStyles()}
 
       .quick-form-two-column {
         width: 100%;
