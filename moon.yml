@@ -1,0 +1,20 @@
+type: application
+
+# Project configuration
+project:
+  name: Quick-Form-Builder
+  description: Form builder application
+
+# Tasks configuration
+tasks:
+  dev:
+    command: npm run dev
+    local: true
+  build:
+    command: npm run build
+    deps:
+      - ^:build
+  test:
+    command: npm run test
+  lint:
+    command: npm run lint
